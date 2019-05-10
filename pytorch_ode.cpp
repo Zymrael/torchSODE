@@ -10,47 +10,49 @@ torch::Tensor d_sigmoid(torch::Tensor z) {
 #include <vector>
 
 typedef torch::Tensor (*model_t)(torch::Tensor, torch::Tensor, double);
-typedef torch::Tensor (*solver_t)(size_t, torch::Tensor, double, model_t);
+typedef torch::Tensor (*solver_t)(size_t, torch::Tensor, torch::Tensor, double, model_t);
 
 torch::Tensor genericModel(torch::Tensor F, torch::Tensor x, double dt) {
 	return torch::matmul(F, x) * dt;
 }
 
-torch::Tensor euler_solver(size_t t0, torch::Tensor x0, double dt, model_t mdl) {
-	auto dxdt = mdl(x0, dt);
+torch::Tensor euler_solver(size_t t0, torch::Tensor F, torch::Tensor x0, double dt, model_t mdl) {
+	auto dxdt = mdl(F, x0, dt);
 	x0 = x0 + dxdt;
 	return x0;
 }
 
-torch::Tensor rk4(size_t t0, torch::Tensor x0, double dt, model_t mdl) {
-	auto f1 = mdl(x0, dt);
+torch::Tensor rk4(size_t t0, torch::Tensor F, torch::Tensor x0, double dt, model_t mdl) {
+	auto f1 = mdl(F, x0, dt);
 
 	auto c2 = dt * f1 / 2.0;
-	auto f2 = model(x0 + c2, dt/2.0);
+	auto f2 = mdl(F, x0 + c2, dt/2.0);
 
 	auto c3 = dt * f2 / 2.0;
-	auto f3 = model(x0 + c3, dt/2.0);
+	auto f3 = mdl(F, x0 + c3, dt/2.0);
 
 	auto c4 = dt * f3;
-	auto f4 = model(x0 + c4, dt);
+	auto f4 = mdl(F, x0 + c4, dt);
 
 	x0 = x0 + (f1 + 2.0 * f2 + 2.0 * f3 + f4) / 6.0;
 	return x0;
 }
 
 std::vector<torch::Tensor> ode_solver(torch::Tensor F, torch::Tensor x0) {
-	model_t model = genericModel;
-	solver_t solver = euler_solver;
+	model_t model = &genericModel;
+	solver_t solver = &euler_solver;
 	double dt = 0.01;
 	size_t range = 1000;
 
 	torch::Tensor initial_x0 = x0;
+	torch::Tensor x_new;
+
 	for(size_t t = 0; t < range; t++) {
-		auto x_new = solver(0, x0, dt, model);
+		x_new = solver(0, F, x0, dt, model);
 		// Append traj? I guess we don't need this for the final implementation		
 		x0 = x_new;
 	}
-	return {initial_x0, x_new}
+	return {initial_x0, x_new};
 }
 
 /*
