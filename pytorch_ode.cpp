@@ -38,21 +38,21 @@ torch::Tensor rk4(size_t t0, torch::Tensor F, torch::Tensor x0, double dt, model
 	return x0;
 }
 
-std::vector<torch::Tensor> ode_solver(torch::Tensor F, torch::Tensor x0) {
+torch::Tensor ode_solver(torch::Tensor F, torch::Tensor x0, double dt, size_t range) {
 	model_t model = &genericModel;
 	solver_t solver = &euler_solver;
-	double dt = 0.01;
-	size_t range = 1000;
 
-	torch::Tensor initial_x0 = x0;
-	torch::Tensor x_new;
+	torch::Tensor x_new = x0;
 
 	for(size_t t = 0; t < range; t++) {
-		x_new = solver(0, F, x0, dt, model);
-		// Append traj? I guess we don't need this for the final implementation		
-		x0 = x_new;
+		x_new = solver(0, F, x_new, dt, model);
 	}
-	return {initial_x0, x_new};
+
+	return x_new;
+}
+
+PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
+  m.def("odesolver", &ode_solver, "ODE Solver");
 }
 
 /*
