@@ -1,6 +1,7 @@
 #include <torch/extension.h>
 
 #include <iostream>
+#include <map>
 
 torch::Tensor d_sigmoid(torch::Tensor z) {
   auto s = torch::sigmoid(z);
@@ -9,8 +10,11 @@ torch::Tensor d_sigmoid(torch::Tensor z) {
 
 #include <vector>
 
+
+typedef std::string string;
 typedef torch::Tensor (*model_t)(torch::Tensor, torch::Tensor, double);
 typedef torch::Tensor (*solver_t)(size_t, torch::Tensor, torch::Tensor, double, model_t);
+typedef std::map<string, solver_t> map;
 
 torch::Tensor genericModel(torch::Tensor F, torch::Tensor x, double dt) {
 	return torch::matmul(F, x) * dt;
@@ -38,14 +42,27 @@ torch::Tensor rk4(size_t t0, torch::Tensor F, torch::Tensor x0, double dt, model
 	return x0;
 }
 
-torch::Tensor ode_solver(torch::Tensor F, torch::Tensor x0, double dt, size_t range) {
-	model_t model = &genericModel;
-	solver_t solver = &euler_solver;
+torch::Tensor ode_solver(torch::Tensor F, torch::Tensor x0, double dt, size_t steps, string solver) {
+	/**
+	* Solver for linear systems of independent differential equations.
+	*
+	*@F torch.Tensor containing the dynamics of the system
+	*@x0 torch.Tensor with initial conditions
+	*@dt float time delta of each step
+	*@steps int number of integration steps 
+	*/
+	map solvers;
 
+	solvers["Euler"] = euler_solver;
+	solvers["RK4"] = rk4;
+
+	solver_t chosen_solver = solvers[solver];
+
+	model_t model = &genericModel;
 	torch::Tensor x_new = x0;
 
-	for(size_t t = 0; t < range; t++) {
-		x_new = solver(0, F, x_new, dt, model);
+	for(size_t t = 0; t < steps; t++) {
+		x_new = chosen_solver(0, F, x_new, dt, model);
 	}
 
 	return x_new;
