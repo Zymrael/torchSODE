@@ -1,9 +1,0 @@
-README.md
-cudaSolver.cu
-cudaSolverInterface.cpp
-setup.py
-setup_cuda.py
-cudasolv.egg-info/PKG-INFO
-cudasolv.egg-info/SOURCES.txt
-cudasolv.egg-info/dependency_links.txt
-cudasolv.egg-info/top_level.txt

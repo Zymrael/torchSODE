@@ -1,7 +1,0 @@
-README.md
-pytorch_ode.cpp
-setup.py
-pytorch_ode.cpp.egg-info/PKG-INFO
-pytorch_ode.cpp.egg-info/SOURCES.txt
-pytorch_ode.cpp.egg-info/dependency_links.txt
-pytorch_ode.cpp.egg-info/top_level.txt
