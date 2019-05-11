@@ -2,11 +2,11 @@ from setuptools import setup
 from torch.utils.cpp_extension import BuildExtension, CUDAExtension
 
 setup(
-    name='cudasolver',
+    name='pySODE',
     ext_modules=[
-        CUDAExtension('pytorchodecuda', [
-            'cudaSolverInterface.cpp',
-            'cudaSolver.cu',
+        CUDAExtension('pySODE', [
+            'euler_solver_interface.cpp',
+            'euler_solver_cuda.cu',
         ])
     ],
     cmdclass={
