@@ -11,11 +11,9 @@ euler_kernel(torch::PackedTensorAccessor<float, 2> F, torch::PackedTensorAccesso
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     int row = tid / W;
     int col = tid % W;
-
-    double x0_in = x0[tid];
-    double F_in = F[row][col];
-    
-    if(tid < W*W){
+    if(tid < W){
+        double x0_in = x0[tid];
+        double F_in = F[tid][tid];
     	for(int i = 0; i < steps; i++)
        	   x0_in += (F_in * x0_in)*dt;
         x0[tid] = x0_in;
@@ -25,7 +23,7 @@ euler_kernel(torch::PackedTensorAccessor<float, 2> F, torch::PackedTensorAccesso
 torch::Tensor euler_solver_cuda(torch::Tensor F, torch::Tensor x0, double dt, int steps, int W){
     
     const int threadsPerBlock = 512;
-    const int blocks = (W*W + threadsPerBlock - 1) / threadsPerBlock;
+    const int blocks = (W*W) / threadsPerBlock;
     
     auto F_a = F.packed_accessor<float,2>();
     auto x0_a = x0.packed_accessor<float,1>();
