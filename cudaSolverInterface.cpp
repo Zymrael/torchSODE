@@ -9,13 +9,13 @@
 
 // CUDA declarations
 
-torch::Tensor euler_solver_cuda(torch::Tensor F, torch::Tensor x0, double dt, size_t steps, int W);
+torch::Tensor euler_solver_cuda(torch::Tensor F, torch::Tensor x0, double dt, int steps, int W);
 
 
 
 // C++ interface
 
-torch::Tensor eulerSolver(torch::Tensor F, torch::Tensor x0, double dt, size_t steps, int W){
+torch::Tensor eulerSolver(torch::Tensor F, torch::Tensor x0, double dt, int steps, int W){
     CHECK_INPUT(F); 
     CHECK_INPUT(x0);
     return euler_solver_cuda(F, x0, dt, steps, W);

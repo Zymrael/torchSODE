@@ -6,8 +6,8 @@
 #include <driver_functions.h>
 
 __global__ void
-euler_kernel(torch::Tensor F, torch::Tensor x0, float dt, int steps, int W) {
-
+euler_kernel(torch::PackedTensorAccessor<float, 2> F, torch::PackedTensorAccessor<float, 1> x0, float dt, int steps, int W) {
+    
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     int row = tid / W;
     int col = tid % W;
@@ -15,24 +15,22 @@ euler_kernel(torch::Tensor F, torch::Tensor x0, float dt, int steps, int W) {
     double x0_in = x0[tid];
     double F_in = F[row][col];
     
-    if(index < W*W){
-    	for(i = 0; i < steps; i++)
-       	   x0 += (F * x0)*dt;
-        x0[tid] = x0;
+    if(tid < W*W){
+    	for(int i = 0; i < steps; i++)
+       	   x0_in += (F_in * x0_in)*dt;
+        x0[tid] = x0_in;
     }
 }
 
-torch::Tensor euler_solver_cuda(torch::Tensor F, torch::Tensor x0, double dt, size_t steps, int W){
-
-    // compute number of blocks and threads per block
+torch::Tensor euler_solver_cuda(torch::Tensor F, torch::Tensor x0, double dt, int steps, int W){
     
     const int threadsPerBlock = 512;
     const int blocks = (W*W + threadsPerBlock - 1) / threadsPerBlock;
+    
+    auto F_a = F.packed_accessor<float,2>();
+    auto x0_a = x0.packed_accessor<float,1>();
 
-    // start timing after allocation of device memory.
-    double startTime = CycleTimer::currentSeconds();
-    // run saxpy_kernel on the GPU
-    euler_kernel<<<blocks, threadsPerBlock>>>(F, x0, dt, steps, W);
+    euler_kernel<<<blocks, threadsPerBlock>>>(F_a, x0_a, dt, steps, W);
     cudaDeviceSynchronize();
     return x0;
 }
