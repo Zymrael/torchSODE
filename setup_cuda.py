@@ -2,9 +2,9 @@ from setuptools import setup
 from torch.utils.cpp_extension import BuildExtension, CUDAExtension
 
 setup(
-    name='cudasolv',
+    name='cudasolver',
     ext_modules=[
-        CUDAExtension('solver', [
+        CUDAExtension('pytorchodecuda', [
             'cudaSolverInterface.cpp',
             'cudaSolver.cu',
         ])

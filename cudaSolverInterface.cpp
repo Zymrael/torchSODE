@@ -20,3 +20,7 @@ torch::Tensor eulerSolver(torch::Tensor F, torch::Tensor x0, double dt, int step
     CHECK_INPUT(x0);
     return euler_solver_cuda(F, x0, dt, steps, W);
 }
+
+PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
+  m.def("Euler Solver", &eulerSolver, "Euler Solver (CUDA)");
+}
