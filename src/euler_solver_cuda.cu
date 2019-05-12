@@ -1,6 +1,6 @@
 #include <torch/extension.h>
 
-#include <stdio.h>
+#include <string>
 #include <iostream>
 #include <cuda.h>
 #include <cuda_runtime.h>
