@@ -1,9 +1,11 @@
 #include <torch/extension.h>
 
 #include <stdio.h>
+#include <iostream>
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <driver_functions.h>
+#include <map>
 
 typedef std::string string;
 typedef void (*solver_t)(torch::Tensor, torch::Tensor, double, int, int);
