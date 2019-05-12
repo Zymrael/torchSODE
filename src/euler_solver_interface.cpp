@@ -1,5 +1,6 @@
 #include <torch/extension.h>
 
+#include <stdio>
 #include <iostream>
 #include <map>
 
