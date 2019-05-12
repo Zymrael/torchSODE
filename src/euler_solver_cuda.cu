@@ -7,7 +7,7 @@
 #include <map>
 
 typedef std::string string;
-typedef void (*solver_t)(torch::PackedTensorAccessor, torch::PackedTensorAccessor, double, int, int);
+typedef void (*solver_t)(torch::PackedTensorAccessor<float, 2>, torch::PackedTensorAccessor<float, 1>, double, int, int);
 typedef std::map<string, solver_t> map;
 
 __global__ void
