@@ -1,6 +1,5 @@
 #include <torch/extension.h>
 
-#include <string>
 #include <iostream>
 #include <map>
 
@@ -8,16 +7,15 @@
 #define CHECK_CONTIGUOUS(x) AT_ASSERTM(x.is_contiguous(), #x " must be contiguous")
 #define CHECK_INPUT(x) CHECK_CUDA(x); CHECK_CONTIGUOUS(x)
 
-typedef std::string string;
 
 // CUDA declarations
 
-torch::Tensor solver_cuda(torch::Tensor F, torch::Tensor x0, double dt, int steps, int W, string name);
+torch::Tensor solver_cuda(torch::Tensor F, torch::Tensor x0, double dt, int steps, int W, std::string name);
 
 
 // C++ interface
 
-torch::Tensor ode_solve(torch::Tensor F, torch::Tensor x0, double dt, int steps, int W, string name){
+torch::Tensor ode_solve(torch::Tensor F, torch::Tensor x0, double dt, int steps, int W, std::string name){
     CHECK_INPUT(F); 
     CHECK_INPUT(x0);
 

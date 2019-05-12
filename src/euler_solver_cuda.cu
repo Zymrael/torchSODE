@@ -1,13 +1,11 @@
 #include <torch/extension.h>
 
-#include <string>
 #include <iostream>
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <driver_functions.h>
 #include <map>
 
-typedef std::string string;
 typedef void (*solver_t)(torch::Tensor, torch::Tensor, double, int, int);
 typedef std::map<string, solver_t> map;
 
@@ -54,7 +52,7 @@ rk4_kernel(torch::PackedTensorAccessor<float, 2> F_a, torch::PackedTensorAccesso
 }
 
 
-torch::Tensor solver_cuda(torch::Tensor F, torch::Tensor x0, double dt, int steps, int W, string name){
+torch::Tensor solver_cuda(torch::Tensor F, torch::Tensor x0, double dt, int steps, int W, std::string name){
 
     map solvers;
     solvers["Euler"] = euler_kernel;    
