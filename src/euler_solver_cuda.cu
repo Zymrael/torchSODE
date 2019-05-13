@@ -49,7 +49,7 @@ general_solver(method_t method, torch::PackedTensorAccessor<float, 2> F_a, torch
     }
 }
 
-torch::Tensor solver_cuda(torch::Tensor F, torch::Tensor x0, double dt, int steps, int W, string name){
+void solver_cuda(torch::Tensor F, torch::Tensor x0, double dt, int steps, int W, string name){
 
     map methods;
     methods["Euler"] = euler_method;    
@@ -58,9 +58,9 @@ torch::Tensor solver_cuda(torch::Tensor F, torch::Tensor x0, double dt, int step
 
     auto F_a = F.packed_accessor<float,2>();
     auto x0_a = x0.packed_accessor<float,1>();
-    auto F_size = F::size(0);
+    auto F_size = torch::size(F, 0);
 
-    auto xud = torch::chunk(x0_a, 2, 0);
+    auto xud = torch::chunk(x0, 2, 0);
     auto xulr = torch::chunk(xud[0], 2, 1);
     auto xllr = torch::chunk(xud[1], 2, 1);
 
@@ -88,7 +88,6 @@ torch::Tensor solver_cuda(torch::Tensor F, torch::Tensor x0, double dt, int step
     //}
 
     cudaDeviceSynchronize();
-    return x0;
 }
 
 
