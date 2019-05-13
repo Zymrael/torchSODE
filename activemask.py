@@ -16,7 +16,6 @@ def import_data(filename):
 				continue
 
 			result = parse_line(list(line)[:-1])
-			#print(result)
 			if result != []:
 				lines.append(result)
 	return lines
@@ -28,12 +27,10 @@ def TBC(lines):
 			initial_counter += 1
 	#TBC
 	for i in range(len(lines)-1):
-	#for i in range(100):
 		if all(lines[i]): 
 			i += process_line(i, lines)
 
 	counter = 0
-	#for i in range(100):
 	pruned_output = []
 	for i in range(len(lines)-1):
 		if not any(lines[i]):
@@ -43,7 +40,6 @@ def TBC(lines):
 	simd_counter = 0
 	for line in pruned_output:
 		for c in line:
-			#print(c)
 			if c == 1:
 				simd_counter += 1
 	print(simd_counter, len(pruned_output), len(pruned_output[0]))
@@ -60,8 +56,6 @@ def find_range(i, lines):
 			reconvergence_point = k
 			break
 	if reconvergence_point - branch_point != 0 and reconvergence_point - branch_point != 1: 
-		#print(branch_point, reconvergence_point)
-		#print(lines[branch_point], lines[reconvergence_point])
 		return branch_point, reconvergence_point
 	return branch_point, branch_point
 
@@ -96,11 +90,8 @@ def process_line(i, lines):
 
 
 def main():
-	#filename = "active_input.txt"
 	filename = "BFSoutput.txt"
-	#filename = "active_small.txt"
 	lines = import_data(filename)
-	#print(lines)
 	TBC(lines)
 
 main()
