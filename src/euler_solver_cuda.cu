@@ -55,13 +55,10 @@ general_solver(method_t method, torch::PackedTensorAccessor<float, 2> F_a, torch
 
 __global__ void
 skew_symmetric_solver(method_t method, float UL_v, float UR_v, float LL_v, float LR_v, torch::PackedTensorAccessor<float, 1> x0_a, torch::PackedTensorAccessor<float, 1> g_a, float dt, int steps,int size) {
-	int tid
 
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if(tid < size/2) {
 	if(tid < size/4) {
-		double F_in_1 = UL_v;
-		double F_in_2 = UR_v;
 		
 	}
 	double g_in_1 = g_a[tid];
@@ -78,9 +75,9 @@ skew_symmetric_solver(method_t method, float UL_v, float UR_v, float LL_v, float
 		//method(LR_v, x0_in_2, g_in_2, dt, steps);
 	}
 
-        x0_a[tid] = x0_in;
+        x0_a[tid] = x0_in_1;
+	x0_a[tid + size/2] = x0_in_2;
     }
-
 }
 
 torch::Tensor solver_cuda(torch::Tensor F, torch::Tensor x0, torch::Tensor g, double dt, int steps, int W, string name){
