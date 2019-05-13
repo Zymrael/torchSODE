@@ -16,7 +16,7 @@ void solver_cuda(torch::Tensor F, torch::Tensor x0, torch::Tensor g, double dt, 
 
 // C++ interface
 
-void ode_solve(torch::Tensor F, torch::Tensor x0, torch::Tensor g, double dt, int steps, int W, string name){
+torch::Tensor ode_solve(torch::Tensor F, torch::Tensor x0, torch::Tensor g, double dt, int steps, int W, string name){
     CHECK_INPUT(F); 
     CHECK_INPUT(x0);
     CHECK_INPUT(g);
