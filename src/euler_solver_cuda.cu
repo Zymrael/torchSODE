@@ -18,7 +18,7 @@ euler_method(double F_in, double x0_in, double g_in, float dt, int steps) {
         // x0_in1 = (UL * g_in1 + UR * g_in2)*dt
         // x0_in2 = (LL * g_in1 + LR & g_in2)*dt
 	// F_in = 1 && g_in = UL * g_in1 + UR * g_in2;
-}`
+}
 
 __inline__ __device__ void
 rk4_method(double F_in, double x0_in, double g_in, float dt, int steps) {
@@ -72,11 +72,10 @@ skew_symmetric_solver(method_t method, float UL_v, float UR_v, float LL_v, float
 
    	for(int i = 0; i < steps; i++) {
 		// F_in = 1 && g_in = UL * g_in1 + UR * g_in2;
-		method(UL_v, x0_in_1, g_in_1, dt, steps);
-		method(UR_v, x0_in_2, g_in_2, dt, steps);
-		x0_in_1 
-		method(LL_v, x0_in_1, g_in_1, dt, steps);
-		method(LR_v, x0_in_2, g_in_2, dt, steps);
+		//method(UL_v, x0_in_1, g_in_1, dt, steps);
+		//method(UR_v, x0_in_2, g_in_2, dt, steps);
+		//method(LL_v, x0_in_1, g_in_1, dt, steps);
+		//method(LR_v, x0_in_2, g_in_2, dt, steps);
 	}
 
         x0_a[tid] = x0_in;
