@@ -10,7 +10,7 @@ typedef void (*solver_t)(torch::PackedTensorAccessor<float, 2>, torch::PackedTen
 typedef void (*method_t)(double, double, float, int);
 
 typedef std::string string;
-typedef std::map<string, solver_t> map;
+typedef std::map<string, method_t> map;
 
 __inline__ __global__ void
 euler_method(double F_in, double x0_in, float dt, int steps) {
