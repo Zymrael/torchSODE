@@ -58,9 +58,9 @@ torch::Tensor solver_cuda(torch::Tensor F, torch::Tensor x0, double dt, int step
 
     auto F_a = F.packed_accessor<float,2>();
     auto x0_a = x0.packed_accessor<float,1>();
-    auto F_size = F::size;
+    auto F_size = F::size(0);
 
-    auto xud = torch::chunk(x1, 2, 0);
+    auto xud = torch::chunk(x0_a, 2, 0);
     auto xulr = torch::chunk(xud[0], 2, 1);
     auto xllr = torch::chunk(xud[1], 2, 1);
 
@@ -84,7 +84,7 @@ torch::Tensor solver_cuda(torch::Tensor F, torch::Tensor x0, double dt, int step
     } else {*/
     	const int threadsPerBlock = 512;
     	const int blocks = (W*W + threadsPerBlock - 1) / threadsPerBlock;
-	general_solver<<<blocks, threadsPerBlock>>>(chosen_method, F_a, x0_a, dt, steps, W, method);
+	general_solver<<<blocks, threadsPerBlock>>>(chosen_method, F_a, x0_a, dt, steps, W);
     //}
 
     cudaDeviceSynchronize();
