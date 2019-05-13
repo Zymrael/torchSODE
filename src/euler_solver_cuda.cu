@@ -87,7 +87,7 @@ torch::Tensor solver_cuda(torch::Tensor F, torch::Tensor x0, torch::Tensor g, do
     	const int blocks = (W*W + threadsPerBlock - 1) / threadsPerBlock;
 	general_solver<<<blocks, threadsPerBlock>>>(chosen_method, F_a, x0_a, g_a, dt, steps, W);
     //}
-   return x0
+   return x0;
 }
 
 
