@@ -11,7 +11,7 @@ typedef std::string string;
 
 // CUDA declarations
 
-void solver_cuda(torch::Tensor F, torch::Tensor x0, torch::Tensor g, double dt, int steps, int W, string name);
+torch::Tensor solver_cuda(torch::Tensor F, torch::Tensor x0, torch::Tensor g, double dt, int steps, int W, string name);
 
 
 // C++ interface
