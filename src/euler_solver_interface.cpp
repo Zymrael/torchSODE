@@ -11,16 +11,17 @@ typedef std::string string;
 
 // CUDA declarations
 
-void solver_cuda(torch::Tensor F, torch::Tensor x0, double dt, int steps, int W, string name);
+void solver_cuda(torch::Tensor F, torch::Tensor x0, torch::Tensor g, double dt, int steps, int W, string name);
 
 
 // C++ interface
 
-void ode_solve(torch::Tensor F, torch::Tensor x0, double dt, int steps, int W, string name){
+void ode_solve(torch::Tensor F, torch::Tensor x0, torch::Tensor g, double dt, int steps, int W, string name){
     CHECK_INPUT(F); 
     CHECK_INPUT(x0);
+    CHECK_INPUT(g);
 
-    return solver_cuda(F, x0, dt, steps, W, name);
+    return solver_cuda(F, x0, g, dt, steps, W, name);
 }
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {

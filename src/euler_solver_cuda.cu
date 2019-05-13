@@ -6,50 +6,50 @@
 #include <driver_functions.h>
 #include <map>
 
-typedef void (*solver_t)(torch::PackedTensorAccessor<float, 2>, torch::PackedTensorAccessor<float, 1>, float, int, int);
-typedef void (*method_t)(double, double, float, int);
+typedef void (*solver_t)(torch::PackedTensorAccessor<float, 2>, torch::PackedTensorAccessor<float, 1>, torch::PackedTensorAccessor<float, 1>, float, int, int);
+typedef void (*method_t)(double, double, double, float, int);
 
 typedef std::string string;
 typedef std::map<string, method_t> map;
 
 __inline__ __device__ void
-euler_method(double F_in, double x0_in, float dt, int steps) {
-       	x0_in += (F_in * x0_in)*dt;
+euler_method(double F_in, double x0_in, double g_in, float dt, int steps) {
+       	x0_in += (F_in * g_in)*dt;
 }
 
 __inline__ __device__ void
-rk4_method(double F_in, double x0_in, float dt, int steps) {
-	auto f1 = (F_in * x0_in)*dt;
+rk4_method(double F_in, double x0_in, double g_in, float dt, int steps) {
+	auto f1 = (F_in * g_in)*dt;
 
 	auto c2 = dt * f1 / 2.0;
-        auto f2 = (F_in * (x0_in + c2)) * (dt / 2.0);
+        auto f2 = (F_in * (g_in + c2)) * (dt / 2.0);
 
 	auto c3 = dt * f2 / 2.0;
-        auto f3 = (F_in * (x0_in + c3)) * (dt / 2.0);
+        auto f3 = (F_in * (g_in + c3)) * (dt / 2.0);
 
 	auto c4 = dt * f3;
-	auto f4 = (F_in * (x0_in + c4)) * dt;
+	auto f4 = (F_in * (g_in + c4)) * dt;
 
 	x0_in = x0_in + (f1 + 2.0 * f2 + 2.0 * f3 + f4) / 6.0;
 }
 
 __global__ void
-general_solver(method_t method, torch::PackedTensorAccessor<float, 2> F_a, torch::PackedTensorAccessor<float, 1> x0_a, float dt, int steps, int W) { 
+general_solver(method_t method, torch::PackedTensorAccessor<float, 2> F_a, torch::PackedTensorAccessor<float, 1> x0_a, torch::PackedTensorAccessor<float, 1> g_a, float dt, int steps, int W) { 
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if(tid < W){
         double x0_in = x0_a[tid];
-	
+	double g_in = g_a[tid];
         double F_in = F_a[tid][tid];
 
    	for(int i = 0; i < steps; i++) {
-		method(F_in, x0_in, dt, steps);
+		method(F_in, x0_in, g_in, dt, steps);
 	}
 
         x0_a[tid] = x0_in;
     }
 }
 
-void solver_cuda(torch::Tensor F, torch::Tensor x0, double dt, int steps, int W, string name){
+void solver_cuda(torch::Tensor F, torch::Tensor x0, torch::Tensor g, double dt, int steps, int W, string name){
 
     map methods;
     methods["Euler"] = euler_method;    
@@ -58,6 +58,7 @@ void solver_cuda(torch::Tensor F, torch::Tensor x0, double dt, int steps, int W,
 
     auto F_a = F.packed_accessor<float,2>();
     auto x0_a = x0.packed_accessor<float,1>();
+    auto g_a = g.packed_accessor<float,1>();
     auto F_size = torch::size(F, 0);
 
     //auto xud = torch::chunk(x0, 2, 0);
@@ -84,10 +85,9 @@ void solver_cuda(torch::Tensor F, torch::Tensor x0, double dt, int steps, int W,
     } else {*/
     	const int threadsPerBlock = 512;
     	const int blocks = (W*W + threadsPerBlock - 1) / threadsPerBlock;
-	general_solver<<<blocks, threadsPerBlock>>>(chosen_method, F_a, x0_a, dt, steps, W);
+	general_solver<<<blocks, threadsPerBlock>>>(chosen_method, F_a, x0_a, g_a, dt, steps, W);
     //}
 
-    cudaDeviceSynchronize();
 }
 
 
