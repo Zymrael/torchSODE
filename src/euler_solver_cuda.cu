@@ -12,12 +12,12 @@ typedef void (*method_t)(double, double, float, int);
 typedef std::string string;
 typedef std::map<string, method_t> map;
 
-__inline__ __global__ void
+__inline__ __device__ void
 euler_method(double F_in, double x0_in, float dt, int steps) {
        	x0_in += (F_in * x0_in)*dt;
 }
 
-__inline__ __global__ void
+__inline__ __device__ void
 rk4_method(double F_in, double x0_in, float dt, int steps) {
 	auto f1 = (F_in * x0_in)*dt;
 
@@ -58,7 +58,7 @@ torch::Tensor solver_cuda(torch::Tensor F, torch::Tensor x0, double dt, int step
 
     auto F_a = F.packed_accessor<float,2>();
     auto x0_a = x0.packed_accessor<float,1>();
-    auto F_size = F_a::size;
+    auto F_size = F::size;
 
     auto xud = torch::chunk(x1, 2, 0);
     auto xulr = torch::chunk(xud[0], 2, 1);
