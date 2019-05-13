@@ -15,7 +15,10 @@ typedef std::map<string, method_t> map;
 __inline__ __device__ void
 euler_method(double F_in, double x0_in, double g_in, float dt, int steps) {
        	x0_in += (F_in * g_in)*dt;
-}
+        // x0_in1 = (UL * g_in1 + UR * g_in2)*dt
+        // x0_in2 = (LL * g_in1 + LR & g_in2)*dt
+	// F_in = 1 && g_in = UL * g_in1 + UR * g_in2;
+}`
 
 __inline__ __device__ void
 rk4_method(double F_in, double x0_in, double g_in, float dt, int steps) {
@@ -33,6 +36,7 @@ rk4_method(double F_in, double x0_in, double g_in, float dt, int steps) {
 	x0_in = x0_in + (f1 + 2.0 * f2 + 2.0 * f3 + f4) / 6.0;
 }
 
+
 __global__ void
 general_solver(method_t method, torch::PackedTensorAccessor<float, 2> F_a, torch::PackedTensorAccessor<float, 1> x0_a, torch::PackedTensorAccessor<float, 1> g_a, float dt, int steps, int W) { 
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -47,6 +51,37 @@ general_solver(method_t method, torch::PackedTensorAccessor<float, 2> F_a, torch
 
         x0_a[tid] = x0_in;
     }
+}
+
+__global__ void
+skew_symmetric_solver(method_t method, float UL_v, float UR_v, float LL_v, float LR_v, torch::PackedTensorAccessor<float, 1> x0_a, torch::PackedTensorAccessor<float, 1> g_a, float dt, int steps,int size) {
+	int tid
+
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    if(tid < size/2) {
+	if(tid < size/4) {
+		double F_in_1 = UL_v;
+		double F_in_2 = UR_v;
+		
+	}
+	double g_in_1 = g_a[tid];
+	double g_in_2 = g_a[tid + size/2];
+
+        double x0_in_1 = x0_a[tid];
+        double x0_in_2 = x0_a[tid + size/2];
+
+   	for(int i = 0; i < steps; i++) {
+		// F_in = 1 && g_in = UL * g_in1 + UR * g_in2;
+		method(UL_v, x0_in_1, g_in_1, dt, steps);
+		method(UR_v, x0_in_2, g_in_2, dt, steps);
+		x0_in_1 
+		method(LL_v, x0_in_1, g_in_1, dt, steps);
+		method(LR_v, x0_in_2, g_in_2, dt, steps);
+	}
+
+        x0_a[tid] = x0_in;
+    }
+
 }
 
 torch::Tensor solver_cuda(torch::Tensor F, torch::Tensor x0, torch::Tensor g, double dt, int steps, int W, string name){
