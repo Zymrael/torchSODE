@@ -14,7 +14,7 @@ typedef std::map<string, method_t> map;
 
 __inline__ __device__ void
 euler_method(double F_in, double x0_in, double g_in, float dt, int steps) {
-       	x0_in += (F_in * g_in)*dt;
+       	//x0_in += (F_in * g_in)*dt;
         // x0_in1 = (UL * g_in1 + UR * g_in2)*dt
         // x0_in2 = (LL * g_in1 + LR & g_in2)*dt
 	// F_in = 1 && g_in = UL * g_in1 + UR * g_in2;
