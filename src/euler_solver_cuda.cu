@@ -58,9 +58,6 @@ skew_symmetric_solver(method_t method, float UL_v, float UR_v, float LL_v, float
 
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if(tid < size/2) {
-	if(tid < size/4) {
-		
-	}
 	double g_in_1 = g_a[tid];
 	double g_in_2 = g_a[tid + size/2];
 
@@ -114,9 +111,9 @@ torch::Tensor solver_cuda(torch::Tensor F, torch::Tensor x0, torch::Tensor g, do
     	const int blocks = (W + threadsPerBlock - 1) / threadsPerBlock;
 
     } else {*/
-    	const int threadsPerBlock = 512;
+    	const int threadsPerBlock = 512; 
     	const int blocks = (W*W + threadsPerBlock - 1) / threadsPerBlock;
-	general_solver<<<blocks, threadsPerBlock>>>(chosen_method, F_a, x0_a, g_a, dt, steps, W);
+//	general_solver<<<blocks, threadsPerBlock>>>(chosen_method, F_a, x0_a, g_a, dt, steps, W);
     //}
    return x0;
 }
