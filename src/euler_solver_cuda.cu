@@ -46,7 +46,7 @@ general_solver(method_t method, torch::PackedTensorAccessor<float, 2> F_a, torch
         double F_in = F_a[tid][tid];
 
    	for(int i = 0; i < steps; i++) {
-		method(F_in, x0_in, g_in, dt, steps);
+		//method(F_in, x0_in, g_in, dt, steps);
 	}
 
         x0_a[tid] = x0_in;
@@ -113,7 +113,7 @@ torch::Tensor solver_cuda(torch::Tensor F, torch::Tensor x0, torch::Tensor g, do
     } else {*/
     	const int threadsPerBlock = 512; 
     	const int blocks = (W*W + threadsPerBlock - 1) / threadsPerBlock;
-//	general_solver<<<blocks, threadsPerBlock>>>(chosen_method, F_a, x0_a, g_a, dt, steps, W);
+	general_solver<<<blocks, threadsPerBlock>>>(chosen_method, F_a, x0_a, g_a, dt, steps, W);
     //}
    return x0;
 }
