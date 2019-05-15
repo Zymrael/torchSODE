@@ -83,9 +83,10 @@ torch::Tensor solver_cuda(torch::Tensor F, torch::Tensor x0, torch::Tensor g, do
     std::map<string, method_t> methods;
     methods["Euler"] = euler_method;
     methods["RK4"] = rk4_method;
-    method_t h_chosen_method;
-    __device__ method_t p_chosen_method = methods[name];
-    cudaMemcpyFromSymbol(&h_chosen_method, p_chosen_method, sizeof(method_t));
+    method_t h_chosen_method = methods[name];
+
+   // __device__ method_t p_chosen_method = methods[name];
+   // cudaMemcpyFromSymbol(&h_chosen_method, p_chosen_method, sizeof(method_t));
 
     auto F_a = F.packed_accessor<float,2>();
     auto x0_a = x0.packed_accessor<float,1>();
