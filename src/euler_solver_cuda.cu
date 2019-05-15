@@ -47,7 +47,7 @@ general_solver(method_t method, torch::PackedTensorAccessor<float, 2> F_a, torch
         double F_in = F_a[tid][tid];
 
    	for(int i = 0; i < steps; i++) {
-		euler_method(F_in, x0_in, g_in, dt, steps);
+		//euler_method(F_in, x0_in, g_in, dt, steps);
 	}
 
         x0_a[tid] = x0_in;
