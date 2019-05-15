@@ -12,7 +12,7 @@ typedef double (*method_t)(double, double, double, float, int);
 typedef std::string string;
 typedef std::map<string, method_t> map;
 
-__inline__ __device__ double
+__device__ double
 euler_method(double F_in, double x0_in, double g_in, float dt, int steps) {
 	return x0_in + (F_in * g_in)*dt;
          //x0_in1 = (UL * g_in1 + UR * g_in2)*dt
@@ -21,7 +21,7 @@ euler_method(double F_in, double x0_in, double g_in, float dt, int steps) {
 	//return;
 }
 
-__inline__ __device__ double
+__device__ double
 rk4_method(double F_in, double x0_in, double g_in, float dt, int steps) {
 	auto f1 = (F_in * g_in)*dt;
 
