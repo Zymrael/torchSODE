@@ -47,7 +47,7 @@ general_solver(method_t method, torch::PackedTensorAccessor<float, 2> F_a, torch
         double F_in = F_a[tid][tid];
 
    	for(int i = 0; i < steps; i++) {
-		//euler_method(F_in, x0_in, g_in, dt, steps);
+		euler_method(F_in, x0_in, g_in, dt, steps);
 	}
 
         x0_a[tid] = x0_in;
@@ -81,8 +81,8 @@ skew_symmetric_solver(method_t method, float UL_v, float UR_v, float LL_v, float
 torch::Tensor solver_cuda(torch::Tensor F, torch::Tensor x0, torch::Tensor g, double dt, int steps, int W, string name){
 
     map methods;
-    methods["Euler"] = euler_method;    
-    methods["RK4"] = rk4_method;
+    methods["Euler"] = &euler_method;
+    methods["RK4"] = &rk4_method;
     method_t chosen_method = methods[name];
 
     auto F_a = F.packed_accessor<float,2>();
