@@ -12,16 +12,16 @@ typedef void (*method_t)(double, double, double, float, int);
 typedef std::string string;
 typedef std::map<string, method_t> map;
 
-__inline__ __device__ void
+__inline__ __device__ double
 euler_method(double F_in, double x0_in, double g_in, float dt, int steps) {
-	x0_in = x0_in + (F_in * g_in)*dt;
+	return x0_in + (F_in * g_in)*dt;
          //x0_in1 = (UL * g_in1 + UR * g_in2)*dt
          //x0_in2 = (LL * g_in1 + LR & g_in2)*dt
 	 //F_in = 1 && g_in = UL * g_in1 + UR * g_in2;
 	//return;
 }
 
-__inline__ __device__ void
+__inline__ __device__ double
 rk4_method(double F_in, double x0_in, double g_in, float dt, int steps) {
 	auto f1 = (F_in * g_in)*dt;
 
@@ -34,7 +34,7 @@ rk4_method(double F_in, double x0_in, double g_in, float dt, int steps) {
 	auto c4 = dt * f3;
 	auto f4 = (F_in * (g_in + c4)) * dt;
 
-	x0_in = x0_in + (f1 + 2.0 * f2 + 2.0 * f3 + f4) / 6.0;
+	return x0_in + (f1 + 2.0 * f2 + 2.0 * f3 + f4) / 6.0;
 }
 
 
@@ -48,7 +48,7 @@ general_solver(method_t method, torch::PackedTensorAccessor<float, 2> F_a, torch
 
    	for(int i = 0; i < steps; i++) {
 		//x0_in += (F_in * g_in)*dt;
-		euler_method(F_in, x0_in, g_in, dt, steps);
+		x0_in = euler_method(F_in, x0_in, g_in, dt, steps);
 	}
 
         x0_a[tid] = x0_in;
