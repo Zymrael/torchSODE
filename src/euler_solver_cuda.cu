@@ -10,7 +10,6 @@ typedef void (*solver_t)(torch::PackedTensorAccessor<float, 2>, torch::PackedTen
 typedef double (*method_t)(double, double, double, float, int);
 
 typedef std::string string;
-typedef std::map<string, method_t> map;
 
 __device__ double
 euler_method(double F_in, double x0_in, double g_in, float dt, int steps) {
@@ -48,7 +47,7 @@ general_solver(method_t method, torch::PackedTensorAccessor<float, 2> F_a, torch
 
    	for(int i = 0; i < steps; i++) {
 		//x0_in += (F_in * g_in)*dt;
-		x0_in = method(F_in, x0_in, g_in, dt, steps);
+		x0_in = (*method)(F_in, x0_in, g_in, dt, steps);
 	}
 
         x0_a[tid] = x0_in;
@@ -81,10 +80,12 @@ skew_symmetric_solver(method_t method, float UL_v, float UR_v, float LL_v, float
 
 torch::Tensor solver_cuda(torch::Tensor F, torch::Tensor x0, torch::Tensor g, double dt, int steps, int W, string name){
 
-    map methods;
-    methods["Euler"] = &euler_method;
-    methods["RK4"] = &rk4_method;
-    method_t chosen_method = methods[name];
+    std::map<string, method_t> methods;
+    methods["Euler"] = euler_method;
+    methods["RK4"] = rk4_method;
+    method_t h_chosen_method;
+    __device__ method_t p_chosen_method = methods[name];
+    cudaMemcpyFromSymbol(&h_chosen_method, p_chosen_method, sizeof(method_t));
 
     auto F_a = F.packed_accessor<float,2>();
     auto x0_a = x0.packed_accessor<float,1>();
@@ -115,7 +116,7 @@ torch::Tensor solver_cuda(torch::Tensor F, torch::Tensor x0, torch::Tensor g, do
     } else {*/
     	const int threadsPerBlock = 512; 
     	const int blocks = (W*W + threadsPerBlock - 1) / threadsPerBlock;
-	general_solver<<<blocks, threadsPerBlock>>>(chosen_method, F_a, x0_a, g_a, dt, steps, W);
+	general_solver<<<blocks, threadsPerBlock>>>(h_chosen_method, F_a, x0_a, g_a, dt, steps, W);
     //}
    return x0;
 }
