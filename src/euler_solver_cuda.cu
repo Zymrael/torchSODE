@@ -13,8 +13,7 @@ typedef std::string string;
 
 __device__ double
 euler_method(double F_in, double x0_in, double g_in, float dt, int steps) {
-	//return x0_in + (F_in * g_in)*dt;
-	return x0_in;
+	return x0_in + (F_in * g_in)*dt;
          //x0_in1 = (UL * g_in1 + UR * g_in2)*dt
          //x0_in2 = (LL * g_in1 + LR & g_in2)*dt
 	 //F_in = 1 && g_in = UL * g_in1 + UR * g_in2;
@@ -101,7 +100,7 @@ torch::Tensor solver_cuda(torch::Tensor F, torch::Tensor x0, torch::Tensor g, do
     auto F_a = F.packed_accessor<float,2>();
     auto x0_a = x0.packed_accessor<float,1>();
     auto g_a = g.packed_accessor<float,1>();
-    //auto F_size = torch::size(F, 0);
+    auto F_size = torch::size(F, 0);
 
     //auto xud = torch::chunk(x0, 2, 0);
     //auto xulr = torch::chunk(xud[0], 2, 1);
