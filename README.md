@@ -11,4 +11,5 @@ The solver itself is designed to be used during neural network training and thus
 
 ### Methods
 `'Euler'` = Euler
-`'RK4' = Runge-Kutta 4
+
+`'RK4'` = Runge-Kutta 4
