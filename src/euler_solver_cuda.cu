@@ -102,9 +102,9 @@ torch::Tensor solver_cuda(torch::Tensor F, torch::Tensor x0, torch::Tensor g, do
     auto g_a = g.packed_accessor<float,1>();
     auto F_size = torch::size(F, 0);
 
-    //auto xud = torch::chunk(x0, 2, 0);
-    //auto xulr = torch::chunk(xud[0], 2, 1);
-    //auto xllr = torch::chunk(xud[1], 2, 1);
+    auto xud = torch::chunk(x0, 2, 0);
+    auto xulr = torch::chunk(xud[0], 2, 1);
+    auto xllr = torch::chunk(xud[1], 2, 1);
 
 /*
     auto UL = xulr[0].packed_accessor<float, 2>();
