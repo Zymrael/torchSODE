@@ -11,7 +11,7 @@ In your terminal of choice:
 
 `git clone https://github.com/Zymrael/torchODE.git`
 
-`cd torchSODE`
+`cd torchSODE/src`
 
 `python setup.py install`
 
