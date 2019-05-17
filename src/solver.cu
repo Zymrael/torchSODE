@@ -13,7 +13,7 @@ typedef std::string string;
 
 __device__ float
 euler_method(float F_in, float x0_in, float g_in, float dt, int steps) {
-	return x0_in + (F_in * g_in) * dt;
+	return (F_in * g_in) * dt;
 }
 
 __device__ float
@@ -29,7 +29,7 @@ rk4_method(float F_in, float x0_in, float g_in, float dt, int steps) {
 	auto c4 = dt * f3;
 	auto f4 = (F_in * (g_in + c4)) * dt;
 
-	return x0_in + (f1 + 2.0 * f2 + 2.0 * f3 + f4) / 6.0;
+	return (f1 + 2.0 * f2 + 2.0 * f3 + f4) / 6.0;
 }
 
 
@@ -42,7 +42,7 @@ general_solver(method_t method, torch::PackedTensorAccessor<float, 2> F_a, torch
         auto F_in = F_a[tid][tid];
 
    	for(int i = 0; i < steps; i++) {
-		x0_in = method(F_in, x0_in, g_in, dt, steps);
+		x0_in = x0_in + method(F_in, x0_in, g_in, dt, steps);
 	}
 
         x0_a[tid] = x0_in;
@@ -58,7 +58,7 @@ compact_diagonal_solver(method_t method, torch::PackedTensorAccessor<float, 2> F
 	auto F_in = F_a[0][0];
 
    	for(int i = 0; i < steps; i++) {
-		x0_in = method(F_in, x0_in, g_in, dt, steps);
+		x0_in = x0_in + method(F_in, x0_in, g_in, dt, steps);
 	}
 
         x0_a[tid] = x0_in;
@@ -82,10 +82,10 @@ compact_skew_symmetric_solver(method_t method, torch::PackedTensorAccessor<float
 	auto LR_v = F_a[1][1];
 
    	for(int i = 0; i < steps; i++) {
-		x0_in_1 = method(UL_v, x0_in_1, g_in_1, dt, steps) 
-			+ method(UR_v, x0_in_2, g_in_2, dt, steps);
-		x0_in_2 = method(LL_v, x0_in_1, g_in_1, dt, steps)
-			+ method(LR_v, x0_in_2, g_in_2, dt, steps);
+		x0_in_1 = x0_in_1 + method(UL_v, x0_in_1, g_in_1, dt, steps) 
+				  + method(UR_v, x0_in_2, g_in_2, dt, steps);
+		x0_in_2 = x0_in_1 + method(LL_v, x0_in_1, g_in_1, dt, steps)
+				  + method(LR_v, x0_in_2, g_in_2, dt, steps);
 	}
 
         x0_a[tid] = x0_in_1;
