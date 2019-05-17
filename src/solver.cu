@@ -76,10 +76,10 @@ compact_skew_symmetric_solver(method_t method, float UL_v, float UR_v, float LL_
         auto x0_in_2 = x0_a[tid + x0_size/2];
 
    	for(int i = 0; i < steps; i++) {
-		x0_in = method(UL_v, x0_in_1, g_in_1, dt, steps);
-		x0_in = method(UR_v, x0_in_2, g_in_2, dt, steps);
-		x0_in = method(LL_v, x0_in_1, g_in_1, dt, steps);
-		x0_in = method(LR_v, x0_in_2, g_in_2, dt, steps);
+		x0_in_1 = method(UL_v, x0_in_1, g_in_1, dt, steps) 
+			+ method(UR_v, x0_in_2, g_in_2, dt, steps);
+		x0_in_2 = method(LL_v, x0_in_1, g_in_1, dt, steps)
+			+ method(LR_v, x0_in_2, g_in_2, dt, steps);
 	}
 
         x0_a[tid] = x0_in_1;
