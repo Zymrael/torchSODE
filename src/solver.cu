@@ -105,6 +105,7 @@ void solve(torch::Tensor F, torch::Tensor x0, torch::Tensor g, float dt, int ste
     h_methods["RK4"] = h_rk4_method;
 
     method_t d_chosen_method = h_methods[name];
+    auto F_a_h = F.accessor<float, 2>();
 
     auto F_a = F.packed_accessor<float,2>();
     auto x0_a = x0.packed_accessor<float,1>();
@@ -119,8 +120,7 @@ void solve(torch::Tensor F, torch::Tensor x0, torch::Tensor g, float dt, int ste
     //general_solver<<<blocks, threadsPerBlock>>>(d_chosen_method, F_a, x0_a, g_a, dt, steps, x0_size);
     switch(F_size) {
 	case 1:
-		auto F_in = F_a[0][0];
-		compact_diagonal_solver<<<blocks, threadsPerBlock>>>(d_chosen_method, F_in, x0_a, g_a, dt, steps, x0_size);
+		compact_diagonal_solver<<<blocks, threadsPerBlock>>>(d_chosen_method, F_a[0][0], x0_a, g_a, dt, steps, x0_size);
 		break;
 //	case 4:
 //		compact_skew_symmetric_solver<<<blocks, threadsPerBlock>>>(d_chosen_method, F_a[0][0], F_a[0][1], F_a[1][0], F_a[1][1], x0_a, g_a, dt, steps, x0_size);
