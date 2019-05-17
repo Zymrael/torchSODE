@@ -116,7 +116,7 @@ torch::Tensor solve_cuda(torch::Tensor F, torch::Tensor x0, torch::Tensor g, flo
 
     const int threadsPerBlock = 512; 
     const int blocks = (x0_size * x0_size + threadsPerBlock - 1) / threadsPerBlock;
-
+/*
     switch(F_size) {
 	case 1:
 		compact_diagonal_solver<<<blocks, threadsPerBlock>>>(d_chosen_method, F_a_h[0][0], x0_a, g_a, dt, steps, x0_size);
@@ -127,7 +127,9 @@ torch::Tensor solve_cuda(torch::Tensor F, torch::Tensor x0, torch::Tensor g, flo
 	default:
 		general_solver<<<blocks, threadsPerBlock>>>(d_chosen_method, F_a, x0_a, g_a, dt, steps, x0_size);
 		break;
-    }
+    }*/
+    
+    general_solver<<<blocks, threadsPerBlock>>>(d_chosen_method, F_a, x0_a, g_a, dt, steps, x0_size);
     return x0;
 }
 
