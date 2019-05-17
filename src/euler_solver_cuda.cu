@@ -34,7 +34,7 @@ rk4_method(float F_in, float x0_in, float g_in, float dt, int steps) {
 
 
 __global__ void
-general_solver(method_t method, torch::PackedTensorAccessor<float, 2> F_a, torch::PackedTensorAccessor<float, 1> x0_a, torch::PackedTensorAccessor<float, 1> g_a, float dt, int steps, int W) { 
+general_solver(method_t method, torch::PackedTensorAccessor<float, 2> F_a, torch::PackedTensorAccessor<float, 1> x0_a, torch::PackedTensorAccessor<float, 1> g_a, float dt, int steps, int x0_size) { 
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if(tid < x0_size){
         auto x0_in = x0_a[tid];
@@ -121,7 +121,7 @@ void solve(torch::Tensor F, torch::Tensor x0, torch::Tensor g, float dt, int ste
 		compact_diagonal_solver<<<blocks, threadsPerBlock>>>(d_chosen_method, F_a[0][0], x0_a, g_a, dt, steps, x0_size);
 		break;
 	case 4:
-		skew_symmetric_solver<<<blocks, threadsPerBlock>>>(d_chosen_method, F_a[0][0], F_a[0][1], F_a[1][0], F_a[1][1], x0_a, g_a, dt, steps, x0_size);
+		compact_skew_symmetric_solver<<<blocks, threadsPerBlock>>>(d_chosen_method, F_a[0][0], F_a[0][1], F_a[1][0], F_a[1][1], x0_a, g_a, dt, steps, x0_size);
 		
 		break;
 	default:
