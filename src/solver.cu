@@ -7,17 +7,16 @@
 #include <map>
 
 typedef void (*solver_t)(torch::PackedTensorAccessor<float, 2>, torch::PackedTensorAccessor<float, 1>, torch::PackedTensorAccessor<float, 1>, float, int, int);
-typedef float (*method_t)(float, float, float, float, int);
-
+typedef float (*method_t)(float, float, float, float);
 typedef std::string string;
 
 __device__ float
-euler_method(float F_in, float x0_in, float g_in, float dt, int steps) {
+euler_method(float F_in, float x0_in, float g_in, float dt) {
 	return (F_in * g_in) * dt;
 }
 
 __device__ float
-rk4_method(float F_in, float x0_in, float g_in, float dt, int steps) {
+rk4_method(float F_in, float x0_in, float g_in, float dt) {
 	auto f1 = (F_in * g_in)*dt;
 
 	auto c2 = dt * f1 / 2.0;
@@ -42,7 +41,7 @@ general_solver(method_t method, torch::PackedTensorAccessor<float, 2> F_a, torch
         auto F_in = F_a[tid][tid];
 
    	for(int i = 0; i < steps; i++) {
-		x0_in = x0_in + method(F_in, x0_in, g_in, dt, steps);
+		x0_in = x0_in + method(F_in, x0_in, g_in, dt);
 	}
 
         x0_a[tid] = x0_in;
@@ -58,7 +57,7 @@ compact_diagonal_solver(method_t method, torch::PackedTensorAccessor<float, 2> F
 	auto F_in = F_a[0][0];
 
    	for(int i = 0; i < steps; i++) {
-		x0_in = x0_in + method(F_in, x0_in, g_in, dt, steps);
+		x0_in = x0_in + method(F_in, x0_in, g_in, dt);
 	}
 
         x0_a[tid] = x0_in;
@@ -67,7 +66,6 @@ compact_diagonal_solver(method_t method, torch::PackedTensorAccessor<float, 2> F
 
 __global__ void
 compact_skew_symmetric_solver(method_t method, torch::PackedTensorAccessor<float, 2> F_a, torch::PackedTensorAccessor<float, 1> x0_a, torch::PackedTensorAccessor<float, 1> g_a, float dt, int steps, int x0_size) {
-
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if(tid < x0_size/2) {
 	auto g_in_1 = g_a[tid];
@@ -82,10 +80,10 @@ compact_skew_symmetric_solver(method_t method, torch::PackedTensorAccessor<float
 	auto LR_v = F_a[1][1];
 
    	for(int i = 0; i < steps; i++) {
-		x0_in_1 = x0_in_1 + method(UL_v, x0_in_1, g_in_1, dt, steps) 
-				  + method(UR_v, x0_in_2, g_in_2, dt, steps);
-		x0_in_2 = x0_in_1 + method(LL_v, x0_in_1, g_in_1, dt, steps)
-				  + method(LR_v, x0_in_2, g_in_2, dt, steps);
+		x0_in_1 = x0_in_1 + method(UL_v, x0_in_1, g_in_1, dt)
+				  + method(UR_v, x0_in_2, g_in_2, dt);
+		x0_in_2 = x0_in_1 + method(LL_v, x0_in_1, g_in_1, dt)
+				  + method(LR_v, x0_in_2, g_in_2, dt);
 	}
 
         x0_a[tid] = x0_in_1;
