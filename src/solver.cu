@@ -116,10 +116,8 @@ torch::Tensor solve_cuda(torch::Tensor F, torch::Tensor x0, torch::Tensor g, flo
 
     const int threadsPerBlock = 512; 
     const int blocks = (x0_size * x0_size + threadsPerBlock - 1) / threadsPerBlock;
-
     switch(F_size) {
 	case 1:
-		float F_in = F_a_h[0][0];
 		compact_diagonal_solver<<<blocks, threadsPerBlock>>>(d_chosen_method, F_in, x0_a, g_a, dt, steps, x0_size);
 		break;
 	case 2:
