@@ -5,6 +5,15 @@ CUDA solver callable from PyTorch. Optimized for independent ordinary differenti
 
 The solver itself is designed to be used during neural network training and thus accepts an additional argument `grad`
 
+## Installation
+
+In your terminal of choice:
+`git clone https://github.com/Zymrael/torchODE.git`
+`cd torchSODE`
+`python setup.py install`
+
+In your python files or notebooks:
+`import torchSODE`
 
 ## API
 `torchSODE.solve(F, x0, grad, dt, steps, method='Euler')` performs `steps` integration cycle with `dt` step size. 
