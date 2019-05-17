@@ -21,9 +21,9 @@ void solve(torch::Tensor F, torch::Tensor x0, torch::Tensor g, double dt, int st
     CHECK_INPUT(x0);
     CHECK_INPUT(g);
 
-    return solve(F, x0, g, dt, steps, W, name);
+    solve(F, x0, g, dt, steps, name);
 }
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-  m.def("solve", &ode_solve, "ODE Solver (CUDA)");
+  m.def("solve", &solve, "ODE Solver (CUDA)");
 }
