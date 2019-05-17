@@ -116,20 +116,14 @@ torch::Tensor solve_cuda(torch::Tensor F, torch::Tensor x0, torch::Tensor g, flo
 
     const int threadsPerBlock = 512; 
     const int blocks = (x0_size * x0_size + threadsPerBlock - 1) / threadsPerBlock;
-/*
-    switch(F_size) {
-	case 1:
+    if(F_size == 1) {
 		compact_diagonal_solver<<<blocks, threadsPerBlock>>>(d_chosen_method, F_a_h[0][0], x0_a, g_a, dt, steps, x0_size);
-		break;
-	case 2:
+    } else if(F_size == 2) {
 		compact_skew_symmetric_solver<<<blocks, threadsPerBlock>>>(d_chosen_method, F_a_h[0][0], F_a_h[0][1], F_a_h[1][0], F_a_h[1][1], x0_a, g_a, dt, steps, x0_size);
-		break;
-	default:
+    } else {
 		general_solver<<<blocks, threadsPerBlock>>>(d_chosen_method, F_a, x0_a, g_a, dt, steps, x0_size);
-		break;
-    }*/
+    }
     
-    general_solver<<<blocks, threadsPerBlock>>>(d_chosen_method, F_a, x0_a, g_a, dt, steps, x0_size);
     return x0;
 }
 
