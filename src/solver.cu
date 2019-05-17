@@ -112,10 +112,11 @@ void solve(torch::Tensor F, torch::Tensor x0, torch::Tensor g, float dt, int ste
     auto g_a = g.packed_accessor<float,1>();
 
     auto F_size = torch::size(x0, 0);
-    auto x0_size = torch::size(x0, 0);
+    //auto x0_size = torch::size(x0, 0);
+    int x0_size = 16;
 
     const int threadsPerBlock = 512; 
-    const int blocks = (x0_size*x0_size + threadsPerBlock - 1) / threadsPerBlock;
+    const int blocks = (x0_size * x0_size + threadsPerBlock - 1) / threadsPerBlock;
 
     switch(F_size) {
 	//case 1:
