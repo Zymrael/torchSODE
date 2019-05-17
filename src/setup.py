@@ -6,7 +6,7 @@ setup(
     ext_modules=[
         CUDAExtension('torchSODE', [
             'solver_interface.cpp',
-            'solver.cu',
+            'solver_cuda.cu',
         ])
     ],
     cmdclass={
