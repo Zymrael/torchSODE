@@ -50,11 +50,12 @@ general_solver(method_t method, torch::PackedTensorAccessor<float, 2> F_a, torch
 }
 
 __global__ void
-compact_diagonal_solver(method_t method, float F_in, torch::PackedTensorAccessor<float, 1> x0_a, torch::PackedTensorAccessor<float, 1> g_a, float dt, int steps, int x0_size) { 
+compact_diagonal_solver(method_t method, torch::PackedTensorAccrssor<float, 2> F_in, torch::PackedTensorAccessor<float, 1> x0_a, torch::PackedTensorAccessor<float, 1> g_a, float dt, int steps, int x0_size) { 
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if(tid < x0_size){
         auto x0_in = x0_a[tid];
 	auto g_in = g_a[tid];
+	auto F_in = F_a[0][0];
 
    	for(int i = 0; i < steps; i++) {
 		x0_in = method(F_in, x0_in, g_in, dt, steps);
@@ -119,7 +120,7 @@ torch::Tensor solve_cuda(torch::Tensor F, torch::Tensor x0, torch::Tensor g, flo
 
     switch(F_size) {
 	case 1:
-		compact_diagonal_solver<<<blocks, threadsPerBlock>>>(d_chosen_method, F_a_h[0][0], x0_a, g_a, dt, steps, x0_size);
+		compact_diagonal_solver<<<blocks, threadsPerBlock>>>(d_chosen_method, F_a, x0_a, g_a, dt, steps, x0_size);
 		break;
 	case 2:
 		compact_skew_symmetric_solver<<<blocks, threadsPerBlock>>>(d_chosen_method, F_a_h[0][0], F_a_h[0][1], F_a_h[1][0], F_a_h[1][1], x0_a, g_a, dt, steps, x0_size);
