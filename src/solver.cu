@@ -111,7 +111,7 @@ void solve(torch::Tensor F, torch::Tensor x0, torch::Tensor g, float dt, int ste
     auto x0_a = x0.packed_accessor<float,1>();
     auto g_a = g.packed_accessor<float,1>();
 
-    auto F_size = torch::size(x0, 0);
+    //auto F_size = torch::size(x0, 0);
     //auto x0_size = torch::size(x0, 0);
     int x0_size = 16;
 
