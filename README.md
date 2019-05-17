@@ -21,7 +21,7 @@ In your python files or notebooks:
 `import torchSODE`
 
 ## API
-`torchSODE.solve(F, x0, grad, dt, steps, method='Euler')` performs `steps` integration cycle with `dt` step size. 
+`torchSODE.solve(F, x0, grad, dt, steps, method='Euler')` performs `steps` integration cycles with `dt` step size. 
 
 For problems where the size of x0 is too large allocating a matrix of dimensions size * size is not always possible. In these cases we assume a compressed representation of `F` which exposes only its diagonal values.
 
