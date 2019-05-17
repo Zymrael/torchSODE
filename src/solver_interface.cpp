@@ -11,12 +11,12 @@ typedef std::string string;
 
 // CUDA declarations
 
-void solve_cudaa(torch::Tensor F, torch::Tensor x0, torch::Tensor g, double dt, int steps, string name);
+void solve_cudaa(torch::Tensor F, torch::Tensor x0, torch::Tensor g, float dt, int steps, string name);
 
 
 // C++ interface
 
-void solve_cpp(torch::Tensor F, torch::Tensor x0, torch::Tensor g, double dt, int steps, string name){
+void solve_cpp(torch::Tensor F, torch::Tensor x0, torch::Tensor g, float dt, int steps, string name){
     CHECK_INPUT(F); 
     CHECK_INPUT(x0);
     CHECK_INPUT(g);
