@@ -91,7 +91,7 @@ compact_skew_symmetric_solver(method_t method, float UL_v, float UR_v, float LL_
 __device__ method_t p_euler_method = euler_method;
 __device__ method_t p_rk4_method = rk4_method;
 
-void solve_cuda(torch::Tensor F, torch::Tensor x0, torch::Tensor g, float dt, int steps, string name){
+torch::Tensor solve_cuda(torch::Tensor F, torch::Tensor x0, torch::Tensor g, float dt, int steps, string name){
 
     std::map<string, method_t> h_methods;
     method_t h_euler_method;
@@ -130,5 +130,6 @@ void solve_cuda(torch::Tensor F, torch::Tensor x0, torch::Tensor g, float dt, in
 		//general_solver<<<blocks, threadsPerBlock>>>(d_chosen_method, F_a, x0_a, g_a, dt, steps, x0_size);
 		break;
     }
+    return x0;
 }
 
