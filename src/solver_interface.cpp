@@ -25,5 +25,5 @@ torch::Tensor solve_cpp(torch::Tensor F, torch::Tensor x0, torch::Tensor g, doub
 }
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-  m.def("solve", &solve_cpp, "ODE Solver (CUDA)");
+  m.def("solve_cuda", &solve_cuda, "ODE Solver (CUDA)");
 }
