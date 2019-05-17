@@ -111,7 +111,6 @@ torch::Tensor solve_cuda(torch::Tensor F, torch::Tensor x0, torch::Tensor g, flo
     h_methods["RK4"] = h_rk4_method;
 
     method_t d_chosen_method = h_methods[name];
-    auto F_a_h = F.accessor<float, 2>();
 
     auto F_a = F.packed_accessor<float,2>();
     auto x0_a = x0.packed_accessor<float,1>();
