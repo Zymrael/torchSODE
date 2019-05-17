@@ -11,7 +11,7 @@ typedef std::string string;
 
 // CUDA declarations
 
-torch::Tensor solve_cudaa(torch::Tensor F, torch::Tensor x0, torch::Tensor g, double dt, int steps, string name);
+void solve_cudaa(torch::Tensor F, torch::Tensor x0, torch::Tensor g, double dt, int steps, string name);
 
 
 // C++ interface
@@ -25,5 +25,5 @@ void solve_cpp(torch::Tensor F, torch::Tensor x0, torch::Tensor g, double dt, in
 }
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-  m.def("solvv", &solve_cpp, "ODE sdadsadsasadsadadsSolver (CUDA)");
+  m.def("solve_cpp", &solve_cpp, "ODE sdadsadsasadsadadsSolver (CUDA)");
 }
