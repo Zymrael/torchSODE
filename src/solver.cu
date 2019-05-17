@@ -126,7 +126,7 @@ void solve(torch::Tensor F, torch::Tensor x0, torch::Tensor g, float dt, int ste
 	//	compact_skew_symmetric_solver<<<blocks, threadsPerBlock>>>(d_chosen_method, F_a_h[0][0], F_a_h[0][1], F_a_h[1][0], F_a_h[1][1], x0_a, g_a, dt, steps, x0_size);
 	//	break;
 	default:
-		general_solver<<<blocks, threadsPerBlock>>>(d_chosen_method, F_a, x0_a, g_a, dt, steps, x0_size);
+		//general_solver<<<blocks, threadsPerBlock>>>(d_chosen_method, F_a, x0_a, g_a, dt, steps, x0_size);
 		break;
     }
 }
