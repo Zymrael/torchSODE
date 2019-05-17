@@ -50,7 +50,7 @@ general_solver(method_t method, torch::PackedTensorAccessor<float, 2> F_a, torch
 }
 
 __global__ void
-compact_diagonal_solver(method_t method, torch::PackedTensorAccessor<float, 1> F_a, torch::PackedTensorAccessor<float, 1> x0_a, torch::PackedTensorAccessor<float, 1> g_a, float dt, int steps, int x0_size) {
+compact_diagonal_solver(method_t method, torch::PackedTensorAccessor<float, 2> F_a, torch::PackedTensorAccessor<float, 1> x0_a, torch::PackedTensorAccessor<float, 1> g_a, float dt, int steps, int x0_size) {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if(tid < x0_size){
         auto x0_in = x0_a[tid];
@@ -66,7 +66,7 @@ compact_diagonal_solver(method_t method, torch::PackedTensorAccessor<float, 1> F
 }
 
 __global__ void
-compact_skew_symmetric_solver(method_t method, torch::PackedTensorAccessor<float, 1> F_a, torch::PackedTensorAccessor<float, 1> x0_a, torch::PackedTensorAccessor<float, 1> g_a, float dt, int steps, int x0_size) {
+compact_skew_symmetric_solver(method_t method, torch::PackedTensorAccessor<float, 2> F_a, torch::PackedTensorAccessor<float, 1> x0_a, torch::PackedTensorAccessor<float, 1> g_a, float dt, int steps, int x0_size) {
 
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if(tid < x0_size) {
