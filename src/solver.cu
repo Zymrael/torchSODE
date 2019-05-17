@@ -113,6 +113,7 @@ void solve(torch::Tensor F, torch::Tensor x0, torch::Tensor g, float dt, int ste
 
     //auto F_size = torch::size(x0, 0);
     //auto x0_size = torch::size(x0, 0);
+    int F_size = 16;
     int x0_size = 16;
 
     const int threadsPerBlock = 512; 
