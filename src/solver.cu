@@ -7,16 +7,16 @@
 #include <map>
 
 typedef void (*solver_t)(torch::PackedTensorAccessor<float, 2>, torch::PackedTensorAccessor<float, 1>, torch::PackedTensorAccessor<float, 1>, float, int, int);
-typedef void (*method_t)(float, float, float, float, int);
+typedef float (*method_t)(float, float, float, float, int);
 
 typedef std::string string;
 
-__device__ void 
+__device__ float
 euler_method(float F_in, float x0_in, float g_in, float dt, int steps) {
-	x0_in = x0_in + (F_in * g_in) * dt;
+	return x0_in + (F_in * g_in) * dt;
 }
 
-__device__ void 
+__device__ float
 rk4_method(float F_in, float x0_in, float g_in, float dt, int steps) {
 	auto f1 = (F_in * g_in)*dt;
 
@@ -29,7 +29,7 @@ rk4_method(float F_in, float x0_in, float g_in, float dt, int steps) {
 	auto c4 = dt * f3;
 	auto f4 = (F_in * (g_in + c4)) * dt;
 
-	x0_in = x0_in + (f1 + 2.0 * f2 + 2.0 * f3 + f4) / 6.0;
+	return x0_in + (f1 + 2.0 * f2 + 2.0 * f3 + f4) / 6.0;
 }
 
 
@@ -42,7 +42,7 @@ general_solver(method_t method, torch::PackedTensorAccessor<float, 2> F_a, torch
         auto F_in = F_a[tid][tid];
 
    	for(int i = 0; i < steps; i++) {
-		method(F_in, x0_in, g_in, dt, steps);
+		x0_in = method(F_in, x0_in, g_in, dt, steps);
 	}
 
         x0_a[tid] = x0_in;
@@ -57,7 +57,7 @@ compact_diagonal_solver(method_t method, float F_in, torch::PackedTensorAccessor
 	auto g_in = g_a[tid];
 
    	for(int i = 0; i < steps; i++) {
-		method(F_in, x0_in, g_in, dt, steps);
+		x0_in = method(F_in, x0_in, g_in, dt, steps);
 	}
 
         x0_a[tid] = x0_in;
@@ -76,10 +76,10 @@ compact_skew_symmetric_solver(method_t method, float UL_v, float UR_v, float LL_
         auto x0_in_2 = x0_a[tid + x0_size/2];
 
    	for(int i = 0; i < steps; i++) {
-		method(UL_v, x0_in_1, g_in_1, dt, steps);
-		method(UR_v, x0_in_2, g_in_2, dt, steps);
-		method(LL_v, x0_in_1, g_in_1, dt, steps);
-		method(LR_v, x0_in_2, g_in_2, dt, steps);
+		x0_in = method(UL_v, x0_in_1, g_in_1, dt, steps);
+		x0_in = method(UR_v, x0_in_2, g_in_2, dt, steps);
+		x0_in = method(LL_v, x0_in_1, g_in_1, dt, steps);
+		x0_in = method(LR_v, x0_in_2, g_in_2, dt, steps);
 	}
 
         x0_a[tid] = x0_in_1;
