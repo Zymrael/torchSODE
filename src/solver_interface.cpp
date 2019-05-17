@@ -16,12 +16,12 @@ torch::Tensor solve_cuda(torch::Tensor F, torch::Tensor x0, torch::Tensor g, flo
 
 // C++ interface
 
-void solve_cpp(torch::Tensor F, torch::Tensor x0, torch::Tensor g, float dt, int steps, string name){
+torch::Tensor solve_cpp(torch::Tensor F, torch::Tensor x0, torch::Tensor g, float dt, int steps, string name){
     CHECK_INPUT(F); 
     CHECK_INPUT(x0);
     CHECK_INPUT(g);
 
-    x0 = solve_cuda(F, x0, g, dt, steps, name);
+    return solve_cuda(F, x0, g, dt, steps, name);
 }
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
