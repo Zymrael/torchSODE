@@ -69,7 +69,7 @@ __global__ void
 compact_skew_symmetric_solver(method_t method, torch::PackedTensorAccessor<float, 2> F_a, torch::PackedTensorAccessor<float, 1> x0_a, torch::PackedTensorAccessor<float, 1> g_a, float dt, int steps, int x0_size) {
 
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
-    if(tid < x0_size) {
+    if(tid < x0_size/2) {
 	auto g_in_1 = g_a[tid];
 	auto g_in_2 = g_a[tid + x0_size/2];
 
