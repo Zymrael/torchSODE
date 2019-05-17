@@ -9,7 +9,9 @@ The solver itself is designed to be used during neural network training and thus
 
 In your terminal of choice:
 `git clone https://github.com/Zymrael/torchODE.git`
+
 `cd torchSODE`
+
 `python setup.py install`
 
 In your python files or notebooks:
