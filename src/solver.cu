@@ -10,7 +10,7 @@ template<typename scalar_t, size_t dim>
 using Packed = torch::PackedTensorAccessor<scalar_t, dim, torch::RestrictPtrTraits, size_t>;
 
 template<typename scalar_t>
-using solver_t = std::function<void (const Packed<scalar_t, 2>, Packed<scalar_t, 1>, const Packed<scalar_t>, scalar_t, int, size_t)>;
+using solver_t = std::function<void (const Packed<scalar_t, 2>, Packed<scalar_t, 1>, const Packed<scalar_t, 1>, scalar_t, int, size_t)>;
 
 template<typename scalar_t>
 using method_t = std::function<scalar_t (const scalar_t, scalar_t, const scalar_t, const float)>;
@@ -104,7 +104,10 @@ compact_skew_symmetric_solver(method_t<scalar_t> method, const Packed<scalar_t, 
 }
 
 // Declare static pointers to device functions
+template <typename scalar_t>
 __device__ method_t<scalar_t> p_euler_method = euler_method;
+
+template <typename scalar_t>
 __device__ method_t<scalar_t> p_rk4_method = rk4_method;
 
 template <typename scalar_t>
