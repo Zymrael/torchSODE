@@ -116,7 +116,7 @@ torch::Tensor solve_cuda(torch::Tensor F, torch::Tensor x0, torch::Tensor g, flo
     auto x0_size = torch::size(x0, 0);
 
     const int threadsPerBlock = 512; 
-    const int blocks = (x0_size * x0_size + threadsPerBlock - 1) / threadsPerBlock;
+    const int blocks = (x0_size + threadsPerBlock - 1) / threadsPerBlock;
 
     switch(F_size) {
 	case 1:
