@@ -10,7 +10,7 @@ template<typename scalar_t, size_t dim>
 using Packed = torch::PackedTensorAccessor<scalar_t, dim, torch::RestrictPtrTraits, size_t>;
 
 template<typename scalar_t>
-using solver_t = std::function<void (const Packed<scalar_t, 2>, Packed1<scalar_t, 1>, const Packed1<scalar_t>, scalar_t, int, size_t)>;
+using solver_t = std::function<void (const Packed<scalar_t, 2>, Packed<scalar_t, 1>, const Packed<scalar_t>, scalar_t, int, size_t)>;
 
 template<typename scalar_t>
 using method_t = std::function<scalar_t (const scalar_t, scalar_t, const scalar_t, const float)>;
@@ -43,7 +43,7 @@ rk4_method(const scalar_t F_in, scalar_t x0_in, const scalar_t g_in, const float
 
 template <typename scalar_t>
 __global__ void
-general_solver(method_t method, const Packed<scalar_t, 2> F_a, Packed<scalar_t, 1> x0_a, const Packed<scalar_t, 1> g_a, const float dt, int steps, size_t x0_size) {
+general_solver(method_t<scalar_t> method, const Packed<scalar_t, 2> F_a, Packed<scalar_t, 1> x0_a, const Packed<scalar_t, 1> g_a, const float dt, int steps, size_t x0_size) {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if(tid < x0_size){
         auto x0_in = x0_a[tid];
@@ -60,7 +60,7 @@ general_solver(method_t method, const Packed<scalar_t, 2> F_a, Packed<scalar_t, 
 
 template <typename scalar_t>
 __global__ void
-compact_diagonal_solver(method_t method, const Packed<scalar_t, 2> F_a, Packed<scalar_t, 1> x0_a, const Packed<scalar_t, 1> g_a, const float dt, int steps, size_t x0_size) {
+compact_diagonal_solver(method_t<scalar_t> method, const Packed<scalar_t, 2> F_a, Packed<scalar_t, 1> x0_a, const Packed<scalar_t, 1> g_a, const float dt, int steps, size_t x0_size) {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if(tid < x0_size){
         auto x0_in = x0_a[tid];
@@ -77,7 +77,7 @@ compact_diagonal_solver(method_t method, const Packed<scalar_t, 2> F_a, Packed<s
 
 template <typename scalar_t>
 __global__ void
-compact_skew_symmetric_solver(method_t method, const Packed<scalar_t, 2> F_a, Packed<scalar_t, 1> x0_a, const Packed<scalar_t, 1> g_a, const float dt, int steps, size_t x0_size) {
+compact_skew_symmetric_solver(method_t<scalar_t> method, const Packed<scalar_t, 2> F_a, Packed<scalar_t, 1> x0_a, const Packed<scalar_t, 1> g_a, const float dt, int steps, size_t x0_size) {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if(tid < x0_size/2) {
 	auto g_in_1 = g_a[tid];
@@ -104,24 +104,24 @@ compact_skew_symmetric_solver(method_t method, const Packed<scalar_t, 2> F_a, Pa
 }
 
 // Declare static pointers to device functions
-__device__ method_t p_euler_method = euler_method;
-__device__ method_t p_rk4_method = rk4_method;
+__device__ method_t<scalar_t> p_euler_method = euler_method;
+__device__ method_t<scalar_t> p_rk4_method = rk4_method;
 
 template <typename scalar_t>
 torch::Tensor solve_cuda(torch::Tensor F, torch::Tensor x0, torch::Tensor g, float dt, int steps, std::string name){
 
-    std::map<std::string, method_t> h_methods;
-    method_t h_euler_method;
-    method_t h_rk4_method; 
+    std::map<std::string, method_t<scalar_t>> h_methods;
+    method_t<scalar_t> h_euler_method;
+    method_t<scalar_t> h_rk4_method; 
 
     // Copy device function pointers to host side
-    cudaMemcpyFromSymbol(&h_euler_method, p_euler_method, sizeof(method_t));
-    cudaMemcpyFromSymbol(&h_rk4_method, p_rk4_method, sizeof(method_t));
+    cudaMemcpyFromSymbol(&h_euler_method, p_euler_method, sizeof(method_t<scalar_t>));
+    cudaMemcpyFromSymbol(&h_rk4_method, p_rk4_method, sizeof(method_t<scalar_t>));
 
     h_methods["Euler"] = h_euler_method;
     h_methods["RK4"] = h_rk4_method;
 
-    method_t d_chosen_method = h_methods[name];
+    method_t<scalar_t> d_chosen_method = h_methods[name];
 
     auto F_a = F.packed_accessor<scalar_t, 2, torch::RestrictPtrTraits, size_t>();
     auto x0_a = x0.packed_accessor<scalar_t, 1, torch::RestrictPtrTraits, size_t>();
