@@ -29,7 +29,7 @@ The following convention is used (regardless of problem size):
 1. For diagonal `F` allocate a torch.Tensor of shape (1).
 2. For 4 block-diagonal `F`, allocate a torch.Tensor of shape (2,2) with values of upper-left diagonal in position [0,0], upper-right diagonal [0,1], lower-left diagonal [1,0], lower-right diagonal [1,1].
 
-In any other scenario `torchSODE.solve` requires the size of `x0.size(0)` to match `F.size(0)` and `F.size(1)`, with `F` assumed to be 4 block-diagonal.
+In any other scenario `torchSODE.solve` requires `x0.size(0)` to match `F.size(0)` and `F.size(1)`, with `F` assumed to be 4 block-diagonal.
 
 ### Methods
 `'Euler'` = Euler
