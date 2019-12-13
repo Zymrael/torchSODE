@@ -17,8 +17,16 @@ setup(
     })
 
 """
+
+            extra_link_args={
+                'nvcc': [
+                    '-rdc=true',
+                    '-lcudart',
+                    '-lcudadevrt'
+                ]
+            },
             extra_compile_args={
-                'cxx': ['-lcudart -lcudadevrt'],
+                'cxx': ['-lcudart -lcudadevrt -rdc=true'],
                 'nvcc': [
                     '-arch=sm_50', '-gencode=arch=compute_50,code=sm_50',
                     '-gencode=arch=compute_52,code=sm_52',
@@ -27,7 +35,8 @@ setup(
                     '-gencode=arch=compute_70,code=sm_70',
                     '-gencode=arch=compute_70,code=compute_70',
                     '-rdc=true',
+                    '-lcudart',
                     '-lcudadevrt'
                 ]
             }
- """
+"""
