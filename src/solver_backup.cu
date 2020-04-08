@@ -59,8 +59,9 @@ typedef void (*solver_t)(torch::PackedTensorAccessor<float, 2>,
 		torch::PackedTensorAccessor<float, 1>, 
 		torch::PackedTensorAccessor<float, 1>, 
 		float, int, int);
-typedef float (*method_t)(float, float, float, torch::PackedTensorAccessor<float, 1>, int);
+// typedef float (*method_t)(float, float, float, float, torch::PackedTensorAccessor<float, 1>, int);
 
+typedef float* (*method_t)(float, float, torch::PackedTensorAccessor<float, 1>, torch::PackedTensorAccessor<float, 1>);
 
 template <unsigned int blockSize>
 __device__ void parallel_max(torch::PackedTensorAccessor<float, 1> g_idata, float *g_odata, unsigned int n) {
@@ -88,38 +89,217 @@ __device__ void parallel_max(torch::PackedTensorAccessor<float, 1> g_idata, floa
 	if (tid == 0) g_odata[blockIdx.x] = sdata[0];
 }
 
-__device__ float
-euler_method(float F_in, float g_in, float dt, torch::PackedTensorAccessor<float, 1> err_a, int tid) {
-	return dt * (F_in * g_in);
+/*__device__ float
+euler_method(float F_in, float x0_in, float g_in, float dt, torch::PackedTensorAccessor<float, 1> err_a, int tid) {
+	return (F_in * g_in) * dt;
+}*/
+
+
+__device__ float*
+van_der_pol(torch::PackedTensorAccessor<float, 1> g_a, float* k) {
+	float y_0 = g_a[0] + k[0];
+	float y_1 = g_a[1] + k[1];
+	int mu = 2;
+	float result[2];
+	result[0] = y_1;
+	result[1] = mu*(1-pow(y_0, 2))*y_1 - y_0;
+	return result;
 }
 
-
-__device__ float
-rk4_method(float F_in, float g_in, float dt, torch::PackedTensorAccessor<float, 1> err_a, int tid) {
-	auto k1 = (F_in * g_in);
-        auto k2 = (F_in * g_in) + (dt * (k1/2.0f));
-        auto k3 = (F_in * g_in) + (dt * (k2/2.0f));
-	auto k4 = (F_in * g_in) + (dt * (k3));
-
-	return dt * ((k1 + (2.0f * k2) + (2.0f * k3) + k4) / 6.0f);
+__device__ float*
+array_transform(float* k, float F_in, float dt) {
+	float k0 = dt * (F_in * k[0]); 
+	float k1 = dt * (F_in * k[1]); 
+	k[0] = k0; k[1] = k1;
+	return k;
 }
 
- __device__ float
-dopri5_method(float F_in, float g_in, float dt, torch::PackedTensorAccessor<float, 1> err_a, int tid) {
-	auto k1 = (F_in * g_in);
-	auto k2 = (F_in * g_in) + (dt *  (k1 * A21));
-	auto k3 = (F_in * g_in) + (dt * ((k1 * A31) + (k2 * A32))); 
-	auto k4 = (F_in * g_in) + (dt * ((k1 * A41) - (k2 * A42) + (k3 * A43)));
-	auto k5 = (F_in * g_in) + (dt * ((k1 * A51) - (k2 * A52) + (k3 * A53) - (k4 * A54)));
-	auto k6 = (F_in * g_in) + (dt * ((k1 * A61) - (k2 * A62) + (k3 * A63) + (k4 * A64) - (k5 * A65)));
-	auto k7 = (F_in * g_in) + (dt * ((k1 * A71) 	       	 + (k3 * A73) + (k4 * A74) - (k5 * A75) + (k6 * A76)));
-	
-	auto res = 		    dt *((B1 * k1)  		 + (B3 * k3)  + (B4 * k4)  - (B5 * k5)  + (B6 * k6));  
-	auto error = 		    dt *((E1 * k1) 		 + (E3 * k3)  + (E4 * k4)  + (E5 * k5)  + (E6 * k6)  + (E7 * k7));
-	err_a[tid] = error;
+__device__ float*
+euler_method(float F_in, float dt, torch::PackedTensorAccessor<float, 1> g_a, torch::PackedTensorAccessor<float, 1> err_a) {
+	float empty[2] = {0};
+	return array_transform(van_der_pol(g_a, empty), F_in, dt);
+}
+
+__device__ float*
+vector_multiply(float* k, float* k1, float c) {
+	float res[2];
+	if(c != 0) {
+		res[0] = k[0] * c;
+		res[1] = k[1] * c;
+	}
+	res[0] = k[0] * k1[0];
+	res[1] = k[1] * k1[1];
+	return res;	
+}
+
+__device__ float*
+vector_sub(float* k, float* k1, float c) {
+	float res[2];
+	if(c != 0) {
+		res[0] = k[0] - c;
+		res[1] = k[1] - c;
+	}
+	res[0] = k[0] - k1[0];
+	res[1] = k[1] - k1[1];
 	return res;
 }
 
+__device__ float*
+vector_add(float* k, float* k1, float c) {
+	float res[2];
+	if(c != 0) {
+		res[0] = k[0] + c;
+		res[1] = k[1] + c;
+	}
+	res[0] = k[0] + k1[0];
+	res[1] = k[1] + k1[1];
+	return res;
+}
+
+
+__device__ float*
+rk4_method(float F_in, float dt, torch::PackedTensorAccessor<float, 1> g_a, torch::PackedTensorAccessor<float, 1> err_a) {
+	float empty[2] = {0};
+	float* k1 = array_transform(van_der_pol(g_a, empty), F_in, dt); 
+	float* k2 = array_transform(van_der_pol(g_a, vector_multiply(k1, empty, 1/2.0f)), F_in, dt);
+	float* k3 = array_transform(van_der_pol(g_a, vector_multiply(k2, empty, 1/2.0f)), F_in, dt);
+	float* k4 = array_transform(van_der_pol(g_a, (k3)), F_in, dt);
+
+	float result[2];
+	result[0] = (k1[0] + (2.0f * k2[0]) + (2.0f * k3[0]) + k4[0]) / 6.0f;
+	result[1] = (k1[1] + (2.0f * k2[1]) + (2.0f * k3[1]) + k4[1]) / 6.0f;
+
+	return result;
+}
+
+__device__ float*
+dopri5_method(float F_in, float dt, torch::PackedTensorAccessor<float, 1> g_a, torch::PackedTensorAccessor<float, 1> err_a) {
+	float empty[2] = {0};
+	float* k1 = array_transform(van_der_pol(g_a, empty), F_in, dt);
+	float* k2 = array_transform(van_der_pol(g_a, vector_multiply(k1, empty, A21)), F_in, dt);
+	float* k3 = array_transform(van_der_pol(g_a, 
+				vector_add(
+					vector_multiply(k1, empty, A31), 
+					vector_multiply(k2, empty, A32),
+					0
+					)
+				), F_in, dt);
+	float* k4 = array_transform(
+		van_der_pol(g_a,
+		       vector_add(	
+				vector_sub(
+					vector_multiply(k1, empty, A41), 
+					vector_multiply(k2, empty, A42),
+					0
+				),
+				vector_multiply(k3, empty, A43),
+				0
+			)
+		), F_in, dt);
+		
+	float* k5 = array_transform(
+		van_der_pol(g_a,
+		       vector_add(	
+				vector_sub(
+					vector_multiply(k1, empty, A51), 
+					vector_multiply(k2, empty, A52),
+					0
+				),
+				vector_sub(
+					vector_multiply(k3, empty, A53),
+					vector_multiply(k4, empty, A54),
+					0
+				),
+				0
+			)
+		), F_in, dt);
+
+	float* k6 = array_transform(
+		van_der_pol(g_a,
+			vector_sub(
+		       		vector_add(	
+					vector_sub(
+						vector_multiply(k1, empty, A61), 
+						vector_multiply(k2, empty, A62),
+						0
+					),
+					vector_add(
+						vector_multiply(k3, empty, A63),
+						vector_multiply(k4, empty, A64),
+						0
+					),
+					0
+				),
+				vector_multiply(k5, empty, A65),
+				0
+			)
+		), F_in, dt);
+
+	float* k7 = array_transform(
+		van_der_pol(g_a,
+			vector_add(
+		       		vector_add(	
+					vector_add(
+						vector_multiply(k1, empty, A71), 
+						vector_multiply(k3, empty, A73),
+						0
+					),
+					vector_sub(
+						vector_multiply(k4, empty, A74),
+						vector_multiply(k5, empty, A75),
+						0
+					),
+					0
+				),
+				vector_multiply(k6, empty, A76),
+				0
+			)
+		), F_in, dt);
+	
+
+	err_a[0] = k1[0]*E1 + k3[0]*E3 + k4[0]*E4 - k5[0]*E5 + k6[0]*E6 + k7[0]*E7;
+	err_a[1] = k1[1]*E1 + k3[1]*E3 + k4[1]*E4 - k5[1]*E5 + k6[1]*E6 + k7[1]*E7;
+
+	float result[2];
+	result[0] = k1[0]*B1 + k3[0]*B3 + k4[0]*B4 - k5[0]*B5 + k6[0]*B6;
+	result[1] = k1[1]*B1 + k3[1]*B3 + k4[1]*B4 - k5[1]*B5 + k6[1]*B6;
+	return result;
+}
+
+/* __device__ float
+dopri5_method(float F_in, float x0_in, float g_in, float dt, torch::PackedTensorAccessor<float, 1> err_a, int tid) {
+	float empty[2] = {0};
+	float* k1 = array_transform(van_der_pol(g_a, empty), F_in, dt); 
+
+	auto k1 = dt * (F_in * g_in);
+	auto k2 = dt * (F_in * g_in * (k1 * A21));
+	auto k3 = dt * (F_in * g_in * ((k1 * A31) + (k2 * A32))); 
+	auto k4 = dt * (F_in * g_in * ((k1 * A41) - (k2 * A42) + (k3 * A43)));
+	auto k5 = dt * (F_in * g_in * ((k1 * A51) - (k2 * A52) + (k3 * A53) - (k4 * A54)));
+	auto k6 = dt * (F_in * g_in * ((k1 * A61) - (k2 * A62) + (k3 * A63) + (k4 * A64) - (k5 * A65)));
+	auto k7 = dt * (F_in * g_in * ((k1 * A71) 	       + (k3 * A73) + (k4 * A74) - (k5 * A75) + (k6 * A76)));
+	
+	auto res = (B1 * k1) + (B3 * k3) + (B4 * k4) - (B5 * k5) + (B6 * k6);  
+	auto error = dt * (E1*k1 + E3*k3 + E4*k4 + E5*k5 + E6*k6 + E7*k7);
+	err_a[tid] = error;
+	return res;
+} */
+
+/*__device__ float
+some_method() {
+	thrust::device_vector<float> D(4);
+	return 0.0f;
+}*/
+
+/*__device__ float
+rk4_method(float F_in, float x0_in, float g_in, float dt, torch::PackedTensorAccessor<float, 1> err_a, int tid) {
+	auto k1 = dt * (F_in * g_in);
+        auto k2 = dt * (F_in * (g_in + (k1/2.0f)));
+        auto k3 = dt * (F_in * (g_in + (k2/2.0f)));
+	auto k4 = dt * (F_in * (g_in + k3));
+
+	return (k1 + (2.0f * k2) + (2.0f * k3) + k4) / 6.0f;
+}*/
 
 __device__ float
 calculate_dt(float dt, float tol, float maximum_err, float rk_order) {
@@ -128,39 +308,17 @@ calculate_dt(float dt, float tol, float maximum_err, float rk_order) {
 
 __device__ float
 get_max(int x0_size, torch::PackedTensorAccessor<float, 1> err_a) {
-    	const int threadsPerBlock = 512; 
-	float max_err[threadsPerBlock] = {0};
-	parallel_max<threadsPerBlock>(err_a, max_err, (unsigned int)x0_size);
-	 __syncthreads();
-	float maximum_err = 0.0f;
+    	// const int threadsPerBlock = 512; 
+	// int threads = min(x0_size, threadsPerBlock);
+	// int blocks = 1 + (x0_size/threadsPerBlock);
+	float maximum_err = fmaxf(err_a[0], err_a[1]);
+	//parallel_max<2>(err_a, max_err, (unsigned int)x0_size);
+	// __syncthreads();
+	/*float maximum_err = 0.0f;
 	for (int i=0; i < blockDim.x; i++) {
 		maximum_err = fmaxf(maximum_err, max_err[i]);
-	}
+	}*/
 	return maximum_err;
-}
-
-__device__ float
-adaptive_step(float F_in, float g_in, int x0_size, torch::PackedTensorAccessor<float, 1> g_a, torch::PackedTensorAccessor<float, 1> err_a, float* new_dt, float dt_in, float x0_new, float rtol, int tid, method_t method) {
-	float temp_x0_new;
-	float dt = dt_in;
-	float maximum_error = get_max(x0_size, err_a);
-	if(maximum_error > rtol) {
-		temp_x0_new = x0_new;
-		while (maximum_error > rtol) {
-		  	if(dt == 0) return 0;
-			dt = calculate_dt(dt, rtol, maximum_error, 5);
-			*new_dt = dt;
-			temp_x0_new = method(F_in, g_in, dt, err_a, tid);
-			maximum_error = get_max(x0_size, err_a);
-		}
-		dt = calculate_dt(dt, rtol, maximum_error, 5);
-		*new_dt = dt;
-		return temp_x0_new;
-	} else {
-		dt = calculate_dt(dt, rtol, maximum_error, 5);
-		*new_dt = dt;
-		return x0_new;
-	}
 }
 
 /*__global__ void
@@ -178,18 +336,14 @@ general_solver(method_t method,
 	float x0_new;
 
    	for(int i = 0; i < steps; i++) {
-		x0_new = method(F_in, g_in, dt, err_a, tid);
+		x0_new = method(F_in, x0_in, g_in, dt, err_a, tid);
 		x0_in = x0_in + x0_new;
-		if(tid==0 && isDOPRI) {
-			x0_new = adaptive_step(F_in, g_in, x0_size, g_a, err_a, new_dt, dt, x0_new, rtol, tid, method);
-			dt = *new_dt;
-		}
+		if(isDOPRI) update_dt(tid, x0_size, dt, rtol, err_a, max_err, new_dt);
 	}
 
         x0_a[tid] = x0_in;
     }
 }*/
-
 
 __global__ void
 compact_diagonal_solver(method_t method, 
@@ -197,28 +351,60 @@ compact_diagonal_solver(method_t method,
 		torch::PackedTensorAccessor<float, 1> x0_a, 
 		torch::PackedTensorAccessor<float, 1> g_a, 
 		torch::PackedTensorAccessor<float, 1> err_a, 
-		float dt, int steps, int x0_size, float rtol, float* new_dt, float* max_err, bool isDOPRI) {
+		float dt, int steps, int x0_size, float tol, float* new_dt, float* max_err, bool isDOPRI) {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
-    if(tid < x0_size){
-        auto x0_in = x0_a[tid];
-	auto g_in = g_a[tid];
+    //if(tid < x0_size){
+    if (dt <= 0) {
+	    return;
+    }
+    if(tid==0) {
+        //auto x0_in = x0_a[tid];
+	float x0_in_0 = x0_a[0];
+	float x0_in_1 = x0_a[1];
+
+	// auto g_in = g_a[tid];
 	auto F_in = F_a[0][0];
 
-	float x0_new;
+	float* x0_new;
+	float* temp_x0_new;
 
    	for(int i = 0; i < steps; i++) {
-		x0_new = method(F_in, g_in, dt, err_a, tid);
+		x0_new = method(F_in, dt, g_a, err_a);
+		// x0_new = method(F_in, x0_in, g_in, dt, err_a, tid);
+		//x0_in = x0_in + x0_new;
 		if(tid==0 && isDOPRI) {
-			x0_new = adaptive_step(F_in, g_in, x0_size, g_a, err_a, new_dt, dt, x0_new, rtol, tid, method);
-			dt = *new_dt;
+			float maximum_error = get_max(x0_size, err_a);
+			if(maximum_error > tol) {
+				temp_x0_new = x0_new;
+				while (maximum_error > tol) {
+				  	if(dt == 0) return;
+					dt = calculate_dt(dt, tol, maximum_error, 5);
+					*new_dt = dt;
+					temp_x0_new = method(F_in, dt, g_a, err_a);
+					maximum_error = get_max(x0_size, err_a);
+				}
+				dt = calculate_dt(dt, tol, maximum_error, 5);
+				*new_dt = dt;
+				x0_new = temp_x0_new;
+			} else {
+				dt = calculate_dt(dt, tol, maximum_error, 5);
+				*new_dt = dt;
+			}
 		}
-		x0_in = x0_in + x0_new;
+
+		x0_in_0 = x0_in_0 + x0_new[0];
+		x0_in_1 = x0_in_1 + x0_new[1];
+
+		g_a[0] = x0_in_0;
+		g_a[1] = x0_in_1;
 	}
-	g_a[tid] = x0_in;
-        x0_a[tid] = x0_in;
+
+        //x0_a[tid] = x0_in;
+	x0_a[0] = x0_in_0;
+	x0_a[1] = x0_in_1;
     }
 }
-
+/*
 __global__ void
 general_skew_symmetric_solver(method_t method, 
 		torch::PackedTensorAccessor<float, 2> F_a, 
@@ -240,47 +426,23 @@ general_skew_symmetric_solver(method_t method,
 	auto LR_v = F_a[tid + x0_size/2][tid + x0_size/2];
 
 	float temp_err = 0;
-	float temp_dt = 0;
    	for(int i = 0; i < steps; i++) {
-		float x0_in_1_new_1 = method(UL_v, g_in_1, dt, err_a, tid);
-		if(tid==0 && isDOPRI) {
-			x0_in_1_new_1 = adaptive_step(UL_v, g_in_1, x0_size, g_a, err_a, new_dt, dt, x0_in_1_new_1, rtol, tid, method);
-			dt = *new_dt;
-		}
+		float x0_in_1_new_1 = method(UL_v, x0_in_1, g_in_1, dt, err_a, tid);
 		temp_err = fmaxf(temp_err, err_a[tid]);
-		temp_dt = fmaxf(temp_dt, dt);
-
-		float x0_in_1_new_2 = method(UR_v, g_in_2, dt, err_a, tid);
-		if(tid==0 && isDOPRI) {
-			x0_in_1_new_2 = adaptive_step(UR_v, g_in_2, x0_size, g_a, err_a, new_dt, dt, x0_in_1_new_2, rtol, tid, method);
-			dt = *new_dt;
-		}
+		float x0_in_1_new_2 = method(UR_v, x0_in_2, g_in_2, dt, err_a, tid);
 		temp_err = fmaxf(temp_err, err_a[tid]);
-		temp_dt = fmaxf(temp_dt, dt);
 
 		x0_in_1 = x0_in_1 + x0_in_1_new_1 + x0_in_1_new_2;
 
-		float x0_in_2_new_1 = method(LL_v, g_in_1, dt, err_a, tid);
-		if(tid==0 && isDOPRI) {
-			x0_in_2_new_1 = adaptive_step(LL_v, g_in_1, x0_size, g_a, err_a, new_dt, dt, x0_in_2_new_1, rtol, tid, method);
-			dt = *new_dt;
-		}
+		float x0_in_2_new_1 = method(LL_v, x0_in_1, g_in_1, dt, err_a, tid);
 		temp_err = fmaxf(temp_err, err_a[tid]);
-		temp_dt = fmaxf(temp_dt, dt);
-
-		float x0_in_2_new_2 = method(LR_v, g_in_2, dt, err_a, tid);
-		if(tid==0 && isDOPRI) {
-			x0_in_2_new_2 = adaptive_step(LR_v, g_in_2, x0_size, g_a, err_a, new_dt, dt, x0_in_2_new_2, rtol, tid, method);
-			dt = *new_dt;
-		}
+		float x0_in_2_new_2 = method(LR_v, x0_in_2, g_in_2, dt, err_a, tid);
 		temp_err = fmaxf(temp_err, err_a[tid]);
-		temp_dt = fmaxf(temp_dt, dt);
 
 		x0_in_2 = x0_in_1 + x0_in_2_new_1 + x0_in_2_new_2;
 
 		err_a[tid] = temp_err;
-		dt = temp_dt;
-		*new_dt = temp_dt;
+		if(isDOPRI) update_dt(tid, x0_size, dt, rtol, err_a, max_err, new_dt);
 	}
 
         x0_a[tid] = x0_in_1;
@@ -309,53 +471,29 @@ compact_skew_symmetric_solver(method_t method,
 	auto LR_v = F_a[1][1];
 
 	float temp_err = 0;
-	float temp_dt = 0;
    	for(int i = 0; i < steps; i++) {
-		float x0_in_1_new_1 = method(UL_v, g_in_1, dt, err_a, tid);
-		if(tid==0 && isDOPRI) {
-			x0_in_1_new_1 = adaptive_step(UL_v, g_in_1, x0_size, g_a, err_a, new_dt, dt, x0_in_1_new_1, rtol, tid, method);
-			dt = *new_dt;
-		}
-		temp_dt = fmaxf(temp_dt, dt);
+		float x0_in_1_new_1 = method(UL_v, x0_in_1, g_in_1, dt, err_a, tid);
 		temp_err = fmaxf(temp_err, err_a[tid]);
-
-		float x0_in_1_new_2 = method(UR_v, g_in_2, dt, err_a, tid);
-		if(tid==0 && isDOPRI) {
-			x0_in_1_new_2 = adaptive_step(UR_v, g_in_2, x0_size, g_a, err_a, new_dt, dt, x0_in_1_new_2, rtol, tid, method);
-			dt = *new_dt;
-		}
-		temp_dt = fmaxf(temp_dt, dt);
+		float x0_in_1_new_2 = method(UR_v, x0_in_2, g_in_2, dt, err_a, tid);
 		temp_err = fmaxf(temp_err, err_a[tid]);
 
 		x0_in_1 = x0_in_1 + x0_in_1_new_1 + x0_in_1_new_2;
 
-		float x0_in_2_new_1 = method(LL_v, g_in_1, dt, err_a, tid);
-		if(tid==0 && isDOPRI) {
-			x0_in_2_new_1 = adaptive_step(LL_v, g_in_1, x0_size, g_a, err_a, new_dt, dt, x0_in_2_new_1, rtol, tid, method);
-			dt = *new_dt;
-		}
-		temp_dt = fmaxf(temp_dt, dt);
+		float x0_in_2_new_1 = method(LL_v, x0_in_1, g_in_1, dt, err_a, tid);
 		temp_err = fmaxf(temp_err, err_a[tid]);
-
-		float x0_in_2_new_2 = method(LR_v, g_in_2, dt, err_a, tid);
-		if(tid==0 && isDOPRI) {
-			x0_in_2_new_2 = adaptive_step(LR_v, g_in_2, x0_size, g_a, err_a, new_dt, dt, x0_in_2_new_2, rtol, tid, method);
-			dt = *new_dt;
-		}
-		temp_dt = fmaxf(temp_dt, dt);
+		float x0_in_2_new_2 = method(LR_v, x0_in_2, g_in_2, dt, err_a, tid);
 		temp_err = fmaxf(temp_err, err_a[tid]);
 
 		x0_in_2 = x0_in_1 + x0_in_2_new_1 + x0_in_2_new_2;
 
 		err_a[tid] = temp_err;
-		dt = temp_dt;
-		*new_dt = temp_dt;
+		if(isDOPRI) update_dt(tid, x0_size, dt, rtol, err_a, max_err, new_dt);
 	}
 
         x0_a[tid] = x0_in_1;
 	x0_a[tid + x0_size/2] = x0_in_2;
     }
-}
+}*/
 
 // Declare static pointers to device functions
 __device__ method_t p_euler_method = euler_method;
@@ -404,15 +542,16 @@ float solve_cuda(torch::Tensor F, torch::Tensor x0, torch::Tensor g, float dt, i
     bool isDOPRI = name == "DOPRI5";
 
     switch(F_size) {
-	case 1:
+	default:
+	//case 1:
 		compact_diagonal_solver<<<blocks, threadsPerBlock>>>(d_chosen_method, F_a, x0_a, g_a, err_a, dt, steps, x0_size, rtol, d_new_dt, max_err, isDOPRI);
 		break;
-	case 2:
+/*	case 2:
 		compact_skew_symmetric_solver<<<blocks, threadsPerBlock>>>(d_chosen_method, F_a, x0_a, g_a, err_a, dt, steps, x0_size, rtol, d_new_dt, max_err, isDOPRI);
 		break;
 	default:
 		general_skew_symmetric_solver<<<blocks, threadsPerBlock>>>(d_chosen_method, F_a, x0_a, g_a, err_a, dt, steps, x0_size, rtol, d_new_dt, max_err, isDOPRI);
-		break;
+		break;*/
     }
     
     cudaMemcpy(h_new_dt, d_new_dt, sizeof(float), cudaMemcpyDeviceToHost);
